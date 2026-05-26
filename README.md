@@ -67,8 +67,12 @@ A few screenshots of the tool's output.
 
 # Supported databases
 
+Currently, 5 databases are supported:
+
 - MySQL
 - PostgreSQL
 - SQLite
 - Oracle
 - Microsoft SQL Server (MSSQL)
+
+Implementing a new database is a matter of a few hours. [Contribute!](https://github.com/cfreal/ending/pulls)
