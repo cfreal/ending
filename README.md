@@ -1,5 +1,5 @@
-![Version](docs/badges/version.svg)
-![Coverage](docs/badges/coverage.svg)
+![Version](https://raw.githubusercontent.com/cfreal/ending/main/docs/badges/version.svg)
+![Coverage](https://raw.githubusercontent.com/cfreal/ending/main/docs/badges/coverage.svg)
 
 # What is ending?
 
