@@ -64,3 +64,11 @@ A few screenshots of the tool's output.
 
 ![](docs/docs/assets/map-columns-with-user-filter.png)
 *Dumping columns whose name contains `user`*
+
+# Supported databases
+
+- MySQL
+- PostgreSQL
+- SQLite
+- Oracle
+- Microsoft SQL Server (MSSQL)
