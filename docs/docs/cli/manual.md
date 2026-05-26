@@ -39,7 +39,7 @@ The only parameter for the compiler class is a callable that formats strings. Th
 
 !!! note
 
-    Check the [`quoting` module](./pdoc/ending/util/quoting.html) to discover the available quoting functions.
+    Check the [`quoting` module](../pdoc/ending/util/quoting.html) to discover the available quoting functions.
 
 Here's an example:
 
@@ -106,7 +106,7 @@ SELECT id, username, password, email FROM users WHERE id = <injection>
 
 !!! note
 
-    The [Injection Methods](../library/method.md) page describes in greater details frequently used methods and how to use them. You can also check the documentation of each module (*e.g.* [mysql](./pdoc/ending/db/mysql/api.html)) to discover the available injection methods and their parameters.
+    The [Injection Methods](../library/method.md) page describes in greater details frequently used methods and how to use them. You can also check the documentation of each module (*e.g.* [mysql](../pdoc/ending/db/mysql/api.html)) to discover the available injection methods and their parameters.
 
 ### UNION-based SQL injection
 

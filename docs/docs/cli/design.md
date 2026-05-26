@@ -24,7 +24,7 @@ It'll open your design file with your file editor.
 
 !!! note
 
-    By default, `ending` creates an [HTTPDesign](./pdoc/ending/cli/design.html#ending.cli.design.HTTPDesign), which is suited for SQL injections over HTTP. If you need to use another protocol, just change the base class to [Design](./pdoc/ending/cli/design.html#ending.cli.design.Design).
+    By default, `ending` creates an [HTTPDesign](../pdoc/ending/cli/design.html#ending.cli.design.HTTPDesign), which is suited for SQL injections over HTTP. If you need to use another protocol, just change the base class to [Design](../pdoc/ending/cli/design.html#ending.cli.design.Design).
 
 The created design contains a single method, `send()`.
 
