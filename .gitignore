@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.coverage
+.vscode
+tests/fixtures/test_designs/
+docs/site/
+docs/pdoc/
+TODO.md
+poetry.lock
+.pre-commit-config.yaml
+.codeman
+dist

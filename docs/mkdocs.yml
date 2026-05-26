@@ -1,0 +1,29 @@
+site_name: ending's documentation
+site_url: https://cfreal.github.io/ending
+nav:
+    - Home: index.md
+    - Main concepts: main-concepts.md
+    - CLI:
+      - Configuring a design: cli/design.md
+      - Manual configuration: cli/manual.md
+      - Running SQL queries (query): cli/query.md
+      - Dumping schema (map): cli/map.md
+    - Tutorials:
+      - First steps: tutorials/first-steps.md
+      - Attacking websockets: tutorials/websockets.md
+      - Bypassing HTML entities: tutorials/html-entities.md
+      - Time-based SQL injection: tutorials/time-based.md
+    - Library:
+      - Python library: library/index.md
+      - AST nodes: library/ast.md
+      - AST compilers: library/compiler.md
+      - Injection methods: library/method.md
+      - Mappers: library/mapper.md
+      - Typing: library/typing.md
+      - Advanced usage: library/advanced.md
+    - Debugging: library/debugging.md
+theme: readthedocs
+markdown_extensions:
+  - admonition
+  - tables
+use_directory_urls: false
