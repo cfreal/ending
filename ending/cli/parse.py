@@ -3,8 +3,8 @@
 import asyncio
 import os
 import os.path
-import platform
 import subprocess
+import sys
 from argparse import (
     ArgumentParser,
     BooleanOptionalAction,
@@ -12,7 +12,6 @@ from argparse import (
     RawDescriptionHelpFormatter,
     _SubParsersAction,
 )
-from typing import NoReturn
 
 
 from rich import get_console
@@ -26,6 +25,7 @@ from rich.traceback import install as install_traceback
 
 from ending.cli.configure import do_configure
 from ending.cli.design import Design, DesignDirectory
+from ending.cli.import_ import do_import
 from ending.cli.map import do_map
 from ending.cli.misc import *
 from ending.cli.misc import PFX_WARNING, ConsoleLiveStatus, message_success, status
@@ -55,6 +55,7 @@ def build_parser():
     _build_configure_parser(subparsers)
     _build_validate_parser(subparsers)
     _build_create_edit_parser(subparsers)
+    # "import" parser is registered inside _build_create_edit_parser
 
     return parser
 
@@ -235,6 +236,19 @@ def _build_create_edit_parser(subparsers) -> None:
     subparsers.add_parser("create", help="Create design")
     subparsers.add_parser("edit", help="Edit design")
     subparsers.add_parser("delete", help="Delete design")
+    p = subparsers.add_parser(
+        "import",
+        help="Create design from an HTTP request on stdin",
+        description=(
+            "Read a raw HTTP request from stdin and create a new design "
+            "with the corresponding send() method.\n\n"
+            "Example:\n\n    ending my-design import < request.txt"
+        ),
+        formatter_class=RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--force", "-f", action="store_true", help="Overwrite existing design"
+    )
 
 
 # Actions
@@ -251,41 +265,17 @@ async def do_create(design_dir: DesignDirectory, namespace: Namespace) -> None:
     await do_edit(design_dir, namespace)
 
 
-def _get_program_path(program: str) -> str | None:
-    """Checks if a program exists in the system's PATH and returns its full path."""
-    paths = (
-        os.path.join(path, program) for path in os.environ["PATH"].split(os.pathsep)
-    )
-    return next((p for p in paths if os.access(p, os.X_OK)), None)
-
-
-def _linux_open(path: str) -> None | NoReturn:
-    """Opens a file in the default application on Linux."""
-
-    if "DISPLAY" in os.environ and (editor := _get_program_path("xdg-open")):
-        options = ()
-    elif editor := _get_program_path("editor"):
-        options = ("--",)
-    elif "EDITOR" in os.environ:
-        editor = os.environ["EDITOR"]
-        options = ("--",)
-
-    if editor:
-        os.execv(editor, (editor,) + options + (path,))
-
-
 async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
     path = str(design_dir.get_module_path())
 
-    match platform.system():
-        case "Darwin":
-            return subprocess.call(path)
-        case "Windows":
-            return os.startfile(path)
-        case "Linux":
-            _linux_open(path)
-
-    console.print(f"{PFX_ERROR} Unable to open file, please do so manually: {path}")
+    if editor := os.environ.get("EDITOR"):
+        subprocess.run([editor, "--", path])
+    elif sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.run(["open", path])
+    else:
+        subprocess.run(["xdg-open", path])
 
 
 async def do_delete(design_dir: DesignDirectory, namespace: Namespace) -> None:
@@ -332,7 +322,7 @@ def main() -> None:
         logging.set_level("SQL")
 
     design_path = DesignDirectory(namespace.design)
-    if namespace.command != "create" and not design_path.exists():
+    if namespace.command not in ("create", "import") and not design_path.exists():
         get_console().print(
             Text.from_markup(
                 f"{PFX_ERROR} Design [b]{namespace.design}[/] does not exist"

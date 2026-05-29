@@ -74,6 +74,7 @@ theme = Theme(
         "tree-branch": "b dodger_blue3",
         "partial-cell": "red",
         "unknown-cell": "dodger_blue3",
+        "import-rule": "dodger_blue3",
     }
 )
 """Theme for the console."""
