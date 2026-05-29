@@ -81,7 +81,7 @@ You can make sure that everything is **OK** using `validate`:
 $ ending dvwa-union validate
 ```
 
-We're ready to dump data!
+Our SQL injection design is now completely set up, and we can run queries!
 
 ### Using `map` to dump the schema
 

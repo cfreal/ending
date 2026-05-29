@@ -28,6 +28,34 @@ It'll open your design file with your file editor.
 
 The created design contains a single method, `send()`.
 
+## Importing a design from an HTTP request (`import`)
+
+If you already have the HTTP request you want to inject, you can use `import` to create a design pre-filled with the corresponding `send()` method. Just pipe the raw request in:
+
+```bash
+$ ending my-design import < my-request.txt
+```
+
+You can also paste a bare URL:
+
+```bash
+$ ending my-design import < <(echo 'https://target.com/page?id=4')
+```
+
+Or run `import` without redirection: **ending** will prompt you to paste the request, then press **Ctrl-D** to confirm.
+
+Either way, the design file is opened in your editor right after, ready to add the injection point.
+
+!!! note
+
+    Query parameters, headers, cookies, and the request body (JSON, form-encoded, or multipart) are all handled automatically.
+
+!!! note
+
+    If the design already exists, use `--force` (or `-f`) to overwrite it.
+
+The generated `send()` method reproduces the request exactly as captured — you only need to splice in `payload` where the injection should go.
+
 ## The `send()` method
 
 The first step in setting up our design is to edit the `Design.send()` method. This method is called to send the payload to the server and return the response.
