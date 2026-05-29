@@ -992,10 +992,11 @@ class TestDoImportForce(unittest.IsolatedAsyncioTestCase):
         import io
         from unittest.mock import AsyncMock, patch
         from ending.cli.import_ import do_import
+        from ending.cli.misc import console
 
         with patch("ending.cli.import_.sys.stdin") as mock_stdin, patch(
             "ending.cli.parse.do_edit", new_callable=AsyncMock
-        ):
+        ), console.capture():
             mock_stdin.buffer = io.BytesIO(raw)
             await do_import(self.design_dir, self._ns(force=force))
 
