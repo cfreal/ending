@@ -42,12 +42,14 @@ def _save_results(prefix: str, partial: bool, listener: QueryStateListener) -> N
 
     try:
         results = listener.table.get_final_results()
+        if results is None:
+            error_panel(f"No results to save for {msg_partial}results")
+            return
         results.store(prefix)
+        storage_panel(prefix, partial)
     except Exception:
         error_panel(f"An error occurred while saving {msg_partial}results")
         traceback_panel()
-    else:
-        storage_panel(prefix, partial)
 
 
 async def do_query(design_dir: DesignDirectory, ns: Namespace) -> None:
@@ -307,6 +309,8 @@ class LiveResultsTable:
         missing.
         """
         results = self.state.get_partial_results(trim=True)
+        if results is None:
+            return None
         if len(results.data) < self.state.bounds[1] - self.state.bounds[0]:
             down_arrow = Text("▼", style="red", justify="center")
             results.data.append(self.build_dummy_row(down_arrow))

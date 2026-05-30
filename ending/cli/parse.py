@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import os.path
 import subprocess
 import sys
 from argparse import (
@@ -15,11 +14,7 @@ from argparse import (
 
 
 from rich import get_console
-from rich.panel import Panel
 from rich.prompt import Prompt
-from rich.segment import Segment, Segments
-from rich.status import Status
-from rich.style import Style
 from rich.text import Text
 from rich.traceback import install as install_traceback
 
@@ -28,7 +23,7 @@ from ending.cli.design import Design, DesignDirectory
 from ending.cli.import_ import do_import
 from ending.cli.map import do_map
 from ending.cli.misc import *
-from ending.cli.misc import PFX_WARNING, ConsoleLiveStatus, message_success, status
+from ending.cli.misc import PFX_WARNING, ConsoleLiveStatus, message_success
 from ending.cli.query import do_query
 from ending.db.generic.map import MapDepth
 from ending.util import logging
@@ -268,14 +263,24 @@ async def do_create(design_dir: DesignDirectory, namespace: Namespace) -> None:
 async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
     path = str(design_dir.get_module_path())
 
+    failed = False
     if editor := os.environ.get("EDITOR"):
-        subprocess.run([editor, "--", path])
+        result = subprocess.run([editor, "--", path])
+        failed = result.returncode != 0
     elif sys.platform == "win32":
-        os.startfile(path)
+        try:
+            os.startfile(path)
+        except OSError:
+            failed = True
     elif sys.platform == "darwin":
-        subprocess.run(["open", path])
+        result = subprocess.run(["open", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        failed = result.returncode != 0
     else:
-        subprocess.run(["xdg-open", path])
+        result = subprocess.run(["xdg-open", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        failed = result.returncode != 0
+
+    if failed:
+        console.print(f"{PFX_ERROR} Unable to open file, please do so manually: [i]{path}[/i]")
 
 
 async def do_delete(design_dir: DesignDirectory, namespace: Namespace) -> None:
