@@ -50,11 +50,7 @@ Or a bare URL:
 $ ending my-design import < <(echo 'https://target.com/page?id=4')
 ```
 
-Either way, the design file is opened in your editor right after, ready to add the injection point.
-
-!!! note
-
-    Query parameters, headers, cookies, and the request body (JSON, form-encoded, or multipart) are all handled automatically.
+Either way, the design file is opened in your editor right after. Query parameters, headers, cookies, and the request body (JSON, form-encoded, or multipart) are all handled automatically.
 
 !!! note
 
@@ -88,7 +84,7 @@ That's it!
 
 ## Automatic configuration (`configure`)
 
-If the injection is simple enough, **ending** can setup the injection itself. Go back to the CLI and run:
+If the injection is simple enough, **ending** can configure it itself. Go back to the CLI and run:
 
 ```bash
 $ ending my-design configure
