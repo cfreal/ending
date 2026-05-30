@@ -24,6 +24,7 @@ REMOVED_HEADERS: tuple[str, ...] = (
     "host",  # implied by the URL
     "content-length",  # requests sets this automatically
     "cookie",  # passed separately via cookies=
+    "connection",
 )
 
 
