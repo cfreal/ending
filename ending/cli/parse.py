@@ -273,14 +273,26 @@ async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
         except OSError:
             failed = True
     elif sys.platform == "darwin":
-        result = subprocess.run(["open", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(
+            ["open", path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         failed = result.returncode != 0
     else:
-        result = subprocess.run(["xdg-open", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(
+            ["xdg-open", path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         failed = result.returncode != 0
 
     if failed:
-        console.print(f"{PFX_ERROR} Unable to open file, please do so manually: [i]{path}[/i]")
+        console.print(
+            f"{PFX_ERROR} Unable to open file, please do so manually: [i]{path}[/i]"
+        )
 
 
 async def do_delete(design_dir: DesignDirectory, namespace: Namespace) -> None:
