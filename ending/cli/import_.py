@@ -199,7 +199,7 @@ class UrlEncodedBody(RequestBody):
     MEDIA_TYPE = "application/x-www-form-urlencoded"
 
     def kwargs(self) -> dict[str, str]:
-        form = dict(parse_qsl(self.body.decode("latin-1")))
+        form = dict(parse_qsl(self.body.decode("latin-1").removesuffix("\n")))
         return {"data": repr(form)}
 
 
