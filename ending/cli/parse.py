@@ -262,7 +262,7 @@ async def do_create(design_dir: DesignDirectory, namespace: Namespace) -> None:
 
 async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
     path = str(design_dir.get_module_path())
-    
+
     def _run_to_null(args: list[str]) -> bool:
         try:
             process = subprocess.run(
@@ -276,7 +276,7 @@ async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
         return process.returncode == 0
 
     success = True
-    
+
     if editor := os.environ.get("EDITOR"):
         result = subprocess.run([editor, "--", path])
         success = result.returncode == 0
