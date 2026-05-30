@@ -44,6 +44,8 @@ $ ending my-design import < <(echo 'https://target.com/page?id=4')
 
 Or run `import` without redirection: **ending** will prompt you to paste the request, then press **Ctrl-D** to confirm.
 
+![](../assets/import.png)
+
 Either way, the design file is opened in your editor right after, ready to add the injection point.
 
 !!! note
