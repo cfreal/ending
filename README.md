@@ -55,14 +55,29 @@ Most of the time, you don't need to get that deep into the tool, as *ending* doe
 
 And it only takes a few lines of code!
 
+# First steps
+
+It takes three steps: `import`, `configure`, and `query`.
+
+![](https://raw.githubusercontent.com/cfreal/ending/main/docs/docs/assets/import.png)
+*Import an HTTP request*
+
+![](https://raw.githubusercontent.com/cfreal/ending/main/docs/docs/assets/import-configure.png)
+*Configure a design*
+
+![](https://raw.githubusercontent.com/cfreal/ending/main/docs/docs/assets/import-query.png)
+*Get results*
+
+Check the [documentation](https://cfreal.github.io/ending) to see all available commands, and many tutorials. 
+
 # Screenshots
 
 A few screenshots of the tool's output.
 
-![](docs/docs/assets/query-live.png)
+![](https://raw.githubusercontent.com/cfreal/ending/main/docs/docs/assets/query-live.png)
 *Dumping some fields from a `users` table*
 
-![](docs/docs/assets/map-columns-with-user-filter.png)
+![](https://raw.githubusercontent.com/cfreal/ending/main/docs/docs/assets/map-columns-with-user-filter.png)
 *Dumping columns whose name contains `user`*
 
 # Supported databases
