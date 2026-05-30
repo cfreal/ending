@@ -326,7 +326,7 @@ async def do_validate(design_dir: DesignDirectory, namespace: Namespace) -> None
     except ValidationError as e:
         display_validation_error(e)
     else:
-        message_success("[b]SUCCESS[/]")
+        message_success("SUCCESS")
     finally:
         status.done()
 

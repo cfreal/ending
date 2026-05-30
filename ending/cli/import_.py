@@ -373,7 +373,7 @@ async def do_import(design_dir: DesignDirectory, namespace: Namespace) -> None:
         f"{PFX_SUCCESS} Design [b]{design_dir.name}[/] created in "
         f"[i]{design_dir.get_module_path()}[/i]"
     )
-    message_success("[b]IMPORTED[/]")
+    message_success("IMPORTED")
 
     from ending.cli.parse import do_edit
 
