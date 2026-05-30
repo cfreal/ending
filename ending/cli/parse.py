@@ -262,34 +262,35 @@ async def do_create(design_dir: DesignDirectory, namespace: Namespace) -> None:
 
 async def do_edit(design_dir: DesignDirectory, namespace: Namespace) -> None:
     path = str(design_dir.get_module_path())
+    
+    def _run_to_null(args: list[str]) -> bool:
+        try:
+            process = subprocess.run(
+                args,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            return False
+        return process.returncode == 0
 
-    failed = False
+    success = True
+    
     if editor := os.environ.get("EDITOR"):
         result = subprocess.run([editor, "--", path])
-        failed = result.returncode != 0
+        success = result.returncode == 0
     elif sys.platform == "win32":
         try:
             os.startfile(path)
         except OSError:
-            failed = True
+            success = False
     elif sys.platform == "darwin":
-        result = subprocess.run(
-            ["open", path],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        failed = result.returncode != 0
+        success = _run_to_null(["open", path])
     else:
-        result = subprocess.run(
-            ["xdg-open", path],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        failed = result.returncode != 0
+        success = _run_to_null(["xdg-open", path])
 
-    if failed:
+    if not success:
         console.print(
             f"{PFX_ERROR} Unable to open file, please do so manually: [i]{path}[/i]"
         )
