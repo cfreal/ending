@@ -173,7 +173,9 @@ class HexRandomTag(RandomTag):
     """
 
     # Exclude hex digits AND 'x', which appears literally in every 0x-prefixed value
-    __NOT_HEX_CHARSET: str = "".join(set(string.ascii_lowercase + string.hexdigits + "x"))
+    __NOT_HEX_CHARSET: str = "".join(
+        set(string.ascii_lowercase + string.hexdigits + "x")
+    )
 
     def generate(self, obj: HexDisplayMixin) -> str:
         if obj.hex:
