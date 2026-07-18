@@ -340,7 +340,7 @@ def main() -> None:
 
     design_path = DesignDirectory(namespace.design)
     if namespace.command not in ("create", "import") and not design_path.exists():
-        get_console().print(
+        console.print(
             Text.from_markup(
                 f"{PFX_ERROR} Design [b]{namespace.design}[/] does not exist"
             )
