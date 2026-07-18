@@ -352,16 +352,15 @@ class Method(ABC, Parameterized):
 
 
 class MergedColumnsMixin:
-    """Mixin that converts a query with several columns into a query with a
-    single merged column. It takes each column, serializes it, coalesces it with
-    `tag_null`, then joins the columns using `tag_separator`.
-    After results have been obtained, they are split again using the same logic
-    to obtain proper SQL results.
+    """Mixin that converts a query with several columns into a query with a single
+    merged column. It takes each column, serializes it, coalesces it with `tag_null`,
+    then joins the columns using `tag_separator`. After results have been obtained, they
+    are split again using the same logic to obtain proper SQL results.
 
     It needs to be mixed with a subclass of `RowsMethod`.
 
-    Subclasses must define  `fetch_merged_rows` method, which retrieves the
-    results of a query with merged columns.
+    Subclasses must define the `fetch_merged_rows` method, which retrieves the results
+    of a query with merged columns.
     """
 
     compiler: Compiler
