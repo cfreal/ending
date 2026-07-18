@@ -557,6 +557,10 @@ class MergedColumnsMethod(RowsMethod):
 
     Subclasses must define the `fetch_merged_rows` method, which retrieves the results
     of a query with merged columns.
+
+    Serialization and deserialization is done with the help of the `Compiler` instance,
+    which is responsible for converting SQL nodes of various types into `TextType`
+    nodes.
     """
 
     tag_separator: str = RandomTag()
@@ -604,7 +608,7 @@ class MergedColumnsMethod(RowsMethod):
 
     def serialize_cell(self, column: Node) -> Node:
         """Converts a column into a `TextType` column and converts `NULL`s into
-        a placeholder string.
+        the `MergedColumnsMethod.tag_null` placeholder string.
         """
         serialized = self.compiler.serialize(column)
         if not column.metadata.nullable:
@@ -703,14 +707,21 @@ class DisplayMethod(MergedColumnsMethod):
 
 class HexDisplayMethod(DisplayMethod):
     """An abstract method that retrieves columns as hexadecimal strings, to bypass
-    display filters or limitations.
+    display filters or limitations. For instance, a webpage may display results in
+    uppercase, or alter some characters (e.g. `<`, `'`, ...).
 
-    Adds the `hex` parameter to the constructor. If set, text nodes get hex encoded
-    before they are sent to the DBMS, and the response is decoded from hexadecimal.
+    Adds the `hex` parameter to the constructor.
+
+    Args:
+        compiler (Compiler): DBMS compiler inject (InjectForBytes): An coroutine that
+        sends an SQL payload and
+            returns bytes
+        nb_rows (int): Maximum number of rows that can be retrieved at once.
+        hex (bool): Whether to encode columns in hexadecimal. Defaults to `False`.
     """
 
     hex: bool
-    """Whether to retrieve text columns as hexadecimal strings."""
+    """Whether to retrieve columns as hexadecimal strings."""
 
     # Since we're only using hexadecimal characters, we can use characters from other
     # classes to delimit the chunks
@@ -731,13 +742,17 @@ class HexDisplayMethod(DisplayMethod):
         super().__init__(compiler, inject, nb_rows=nb_rows, **kwargs)
 
     def serialize_cell(self, column: Node) -> Node:
-        """Serializes text cells to hexadecimal. BlobTypes are already converted to
-        hexadecimal by the compiler, while BoolType and IntType are (generally) in hex
-        form by design.
+        """Converts a column into a `TextType` column and converts `NULL`s into
+        the `MergedColumnsMethod.tag_null` placeholder string.
 
-        This method makes the assumption that Hex(NULL) returns NULL, which is true for
-        most DBMSs.
+        If `HexDisplayMethod.hex` is `True`, columns are serialized to hexadecimal, i.e.
+        they can be represented as a string of hexadecimal characters.
         """
+        # Serializes text cells to hexadecimal. `BlobType`s are already converted to
+        # hexadecimal by the compiler, while `BoolType` and `IntType` are (generally) in
+        # hex form by design.
+        # This method makes the assumption that `Hex(NULL)` returns NULL, which is true for
+        # most DBMSs.
         if self.hex and isinstance(column.metadata.type, TextType):
             column = Hex(column)
         return super().serialize_cell(column)
@@ -763,10 +778,6 @@ class HexDisplayMethod(DisplayMethod):
                 )
 
         return cell
-
-    def get_validator(self) -> type[MethodValidator]:
-        """Only allow the custom validation if we're not in hex mode."""
-        return super().get_validator()
 
 
 class RowMethod(RowsMethod):
@@ -817,7 +828,7 @@ class SelectMethod(HexDisplayMethod):
             Alternatively, can also be a list of columns.
         column (int): Index of a column that is displayed on the page
         dummy_column (Node): The value to give to unused columns. Defaults to `NULL`.
-        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
+        hex (bool): Whether to retrieve columns in hexadecimal. Defaults to `False`.
     """
 
     column: int
@@ -912,7 +923,7 @@ class ChunkMethod(HexDisplayMethod):
             Generally, it is the error message displayed by the application.
             If not specified, a pattern will be build automatically, to the
             expense of performance.
-        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
+        hex (bool): Whether to retrieve columns in hexadecimal. Defaults to `False`.
 
     Behaviour:
 
