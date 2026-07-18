@@ -166,7 +166,7 @@ class Compiler(generic.HasConcatWSMixin, generic.Compiler):
         return super().compile_Value(value, s)
 
 
-class SelectMethod(generic.HexSelectMethod):
+class SelectMethod(generic.SelectMethod):
     def __init__(
         self,
         compiler: Compiler,

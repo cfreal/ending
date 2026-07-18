@@ -35,7 +35,7 @@ from ending.ast import (
 )
 from ending.cli.design import Design, DesignEditor
 from ending.db.generic.compiler import Compiler
-from ending.db.generic.method import HexDisplayMixin, Method
+from ending.db.generic.method import HexDisplayMethod, Method
 from ending.exception import InjectionError
 from ending.struct.livestatus import LiveStatus, VoidLiveStatus
 from ending.util import logging, randomized
@@ -1838,7 +1838,8 @@ class DisplayMethodConfigurator(MethodConfigurator):
     async def _verify(self) -> None:
         # If the method came to a conclusion, it means that it was able to retrieve
         # results: no need to check again
-        if issubclass(self.Method, HexDisplayMixin) and await self._configure_hex():
+        # TODO Move this to HexDisplayMethodConfigurator
+        if issubclass(self.Method, HexDisplayMethod) and await self._configure_hex():
             return
 
         value = randomized.string(10)

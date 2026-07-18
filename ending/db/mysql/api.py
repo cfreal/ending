@@ -135,7 +135,7 @@ class ExtractValueMethod(generic.ErrorBasedMethod):
         return Function["ExtractValue"]("a", Concatenation(("x(", payload)))
 
 
-class SelectMethod(generic.HexSelectMethod):
+class SelectMethod(generic.SelectMethod):
     pass
 
 

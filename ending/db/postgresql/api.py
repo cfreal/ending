@@ -174,7 +174,7 @@ class CastAsIntMethod(generic.ErrorBasedMethod):
         return Cast(Concatenation((":", payload)), "int") == 1
 
 
-class SelectMethod(generic.HexSelectMethod):
+class SelectMethod(generic.SelectMethod):
     def __init__(
         self,
         compiler: Compiler,

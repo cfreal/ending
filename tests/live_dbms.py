@@ -13,7 +13,7 @@ import pyodbc
 from ending.ast import *
 from ending.db.generic.compiler import Compiler
 from ending.db.generic.map import Mapper
-from ending.db.generic.method import HexSelectMethod, Method, SelectMethod
+from ending.db.generic.method import Method, SelectMethod
 from ending.struct.resultset import ResultSet
 from ending.util import logging, quoting
 from ending.util.misc import to_bytes
@@ -375,8 +375,6 @@ class TestLiveDBMS(IsolatedAsyncioTestCase):
     async def test_fetching_unknowntype_produces_proper_values_for_SelectMethod_with_hex(
         self,
     ):
-        if not issubclass(self.dbms_module.SelectMethod, HexSelectMethod):
-            self.skipTest("HexSelectMethod is not implemented for this DBMS")
         method = self._get_selectmethod(hex=True)
         await self.check_fetching_unknowntype_produces_proper_values(method, 100)
 
@@ -547,9 +545,6 @@ class TestLiveDBMS(IsolatedAsyncioTestCase):
         self.check_results(results, NB_ROWS)
 
     async def test_SelectMethod_with_payload_echoed_with_hex(self):
-        if not issubclass(self.dbms_module.SelectMethod, HexSelectMethod):
-            self.skipTest("HexSelectMethod is not implemented for this DBMS")
-
         NB_ROWS = 100
 
         async def inject(payload: Node) -> bytes:
@@ -561,9 +556,6 @@ class TestLiveDBMS(IsolatedAsyncioTestCase):
         self.check_results(results, NB_ROWS)
 
     async def test_SelectMethod_with_hex(self):
-        if not issubclass(self.dbms_module.SelectMethod, HexSelectMethod):
-            self.skipTest("HexSelectMethod is not implemented for this DBMS")
-
         NB_ROWS = 100
 
         query = self.query.limit(NB_ROWS)

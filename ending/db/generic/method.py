@@ -110,20 +110,20 @@ __all__ = [
     "DisplayMethod",
     "BoundedMethod",
     "RowsMethod",
-    "RowMethod",
+    "MergedColumnsMethod",
+    "DisplayMethod",
+    "HexDisplayMethod",
     "SelectMethod",
-    "HexSelectMethod",
+    "RowMethod",
     "ChunkMethod",
-    "HexChunkMethod",
     "ErrorBasedMethod",
     "CellMethod",
     "TestMethod",
     "TimebasedTestMethod",
-    "MergedColumnsMixin",
-    "HexDisplayMixin",
     "InjectForBytes",
     "InjectForBool",
     "RandomTag",
+    "HexRandomTag",
     "ByteSumMixin",
 ]
 
@@ -172,9 +172,9 @@ class HexRandomTag(RandomTag):
     The string is composed of 1 lowercase non-hexadecimal character.
     """
 
-    __NOT_HEX_CHARSET = list(set(string.ascii_lowercase) - set(string.hexdigits))
+    __NOT_HEX_CHARSET = list(set(string.ascii_lowercase) - set(string.hexdigits + 'x'))
 
-    def generate(self, obj: HexDisplayMixin) -> str:
+    def generate(self, obj: HexDisplayMethod) -> str:
         if obj.hex:
             return randomized.string(size=1, charset=self.__NOT_HEX_CHARSET)
         return super().generate(obj)
@@ -349,85 +349,6 @@ class Method(ABC, Parameterized):
     def get_configurator() -> type[MethodConfigurator]:
         """Gets the configuration class for this method, if any."""
         return None
-
-
-class MergedColumnsMixin:
-    """Mixin that converts a query with several columns into a query with a single
-    merged column. It takes each column, serializes it, coalesces it with `tag_null`,
-    then joins the columns using `tag_separator`. After results have been obtained, they
-    are split again using the same logic to obtain proper SQL results.
-
-    It needs to be mixed with a subclass of `RowsMethod`.
-
-    Subclasses must define the `fetch_merged_rows` method, which retrieves the results
-    of a query with merged columns.
-    """
-
-    compiler: Compiler
-
-    tag_separator: str = RandomTag()
-    """A string columns will be joined with.
-    Defaults to a random string of 4 characters."
-    """
-    tag_null: str = RandomTag()
-    """A value to replace null values with.
-    Defaults to a random string of 4 characters.
-    """
-
-    async def fetch_rows(self, query: Query, ctx: Context) -> Table:
-        """Merges columns, fetches rows, then splits them again."""
-        merged_query = self.merge_columns(query)
-        rows = await self.fetch_merged_rows(merged_query, ctx=ctx)
-        return self.split_columns(query, rows)
-
-    @abstractmethod
-    async def fetch_merged_rows(self, query: Query, ctx: Context) -> list[bytes]:
-        """Fetches the rows for a query with merged columns."""
-
-    def merge_columns(self, query: Query) -> Query:
-        """Merges every column of given query into one by concatenating them,
-        separated by the `separator` parameter. Each column is first `COALESCE`d
-        so that NULL columns don't break the concatenation.
-        """
-        columns = list(map(self.serialize_cell, query.q.columns))
-        columns = ConcatWS(self.tag_separator, columns)
-        return query.columns(columns)
-
-    def split_columns(self, query: Query, merged_results: list[bytes]) -> Table:
-        """Splits the single-column results into several columns, for each row,
-        in order to get expected results.
-        """
-        separator = re.compile(
-            re.escape(self.tag_separator.encode()), flags=re.IGNORECASE
-        )
-        return [
-            [
-                self.deserialize_cell(column, cell)
-                for column, cell in zip(query.q.columns, separator.split(row))
-            ]
-            for row in merged_results
-        ]
-
-    def serialize_cell(self, column: Node) -> Node:
-        """Converts a column into a `TextType` column and converts `NULL`s into
-        a placeholder string.
-        """
-        serialized = self.compiler.serialize(column)
-        if not column.metadata.nullable:
-            return serialized
-        return Function["COALESCE"](
-            serialized,
-            Value(self.tag_null),
-            type=TextType(),
-            single=column.metadata.single,
-            nullable=False,
-        )
-
-    def deserialize_cell(self, column: Node, cell: bytes) -> Cell:
-        """Converts a cell back to its original type."""
-        if cell.lower() == self.tag_null.encode():
-            return None
-        return self.compiler.deserialize(column.metadata.type, cell)
 
 
 class BoundedMethod(Method):
@@ -627,13 +548,92 @@ class RowsMethod(BoundedMethod):
         """Obtains several rows from `query`."""
 
 
-class DisplayMethod(MergedColumnsMixin, RowsMethod):
+class MergedColumnsMethod(RowsMethod):
+    """Abstract method that converts a query with several columns into a query with a
+    single merged column before dumping it. It takes each column, serializes it,
+    coalesces it with `tag_null`, then joins the columns using `tag_separator`. After
+    results have been obtained, they are split again using the same logic to obtain
+    proper SQL results.
+
+    Subclasses must define the `fetch_merged_rows` method, which retrieves the results
+    of a query with merged columns.
+    """
+
+    tag_separator: str = RandomTag()
+    """A string columns will be joined with.
+    Defaults to a random string of 4 characters.
+    """
+    tag_null: str = RandomTag()
+    """A value to replace null values with.
+    Defaults to a random string of 4 characters.
+    """
+
+    async def fetch_rows(self, query: Query, ctx: Context) -> Table:
+        """Merges columns into one, fetches rows, then splits the columns back again."""
+        merged_query = self.merge_columns(query)
+        rows = await self.fetch_merged_rows(merged_query, ctx=ctx)
+        return self.split_columns(query, rows)
+
+    @abstractmethod
+    async def fetch_merged_rows(self, query: Query, ctx: Context) -> list[bytes]:
+        """Fetches the rows for a query with merged columns."""
+
+    def merge_columns(self, query: Query) -> Query:
+        """Merges every column of given query into one by concatenating them,
+        separated by the `separator` parameter. Each column is first `COALESCE`d
+        so that NULL columns don't break the concatenation.
+        """
+        columns = list(map(self.serialize_cell, query.q.columns))
+        columns = ConcatWS(self.tag_separator, columns)
+        return query.columns(columns)
+
+    def split_columns(self, query: Query, merged_results: list[bytes]) -> Table:
+        """Splits the single-column results into several columns, for each row,
+        in order to get expected results.
+        """
+        separator = re.compile(
+            re.escape(self.tag_separator.encode()), flags=re.IGNORECASE
+        )
+        return [
+            [
+                self.deserialize_cell(column, cell)
+                for column, cell in zip(query.q.columns, separator.split(row))
+            ]
+            for row in merged_results
+        ]
+
+    def serialize_cell(self, column: Node) -> Node:
+        """Converts a column into a `TextType` column and converts `NULL`s into
+        a placeholder string.
+        """
+        serialized = self.compiler.serialize(column)
+        if not column.metadata.nullable:
+            return serialized
+        return Function["COALESCE"](
+            serialized,
+            Value(self.tag_null),
+            type=TextType(),
+            single=column.metadata.single,
+            nullable=False,
+        )
+
+    def deserialize_cell(self, column: Node, cell: bytes) -> Cell:
+        """Converts a cell back to its original type."""
+        if cell.lower() == self.tag_null.encode():
+            return None
+        return self.compiler.deserialize(column.metadata.type, cell)
+
+
+class DisplayMethod(MergedColumnsMethod):
     """Abstract method that retrieves results that are fully or partially
     displayed in the response.
 
     The method uses a case-insensitive regex to extract results from the response; it
     does so to avoid complications in case the SQL results are "processed" by the target
     server.
+    
+    Subclasses must define the `fetch_merged_rows` method, which retrieves the results
+    of a query with merged columns.
 
     Args:
         compiler (Compiler): DBMS compiler
@@ -701,9 +701,9 @@ class DisplayMethod(MergedColumnsMixin, RowsMethod):
         return Value(tag[:1]), Value(tag[1:])
 
 
-class HexDisplayMixin(DisplayMethod):
-    """Optionally retrieves columns as hexadecimal strings, to bypass display filters or
-    limitations.
+class HexDisplayMethod(DisplayMethod):
+    """An abstract method that retrieves columns as hexadecimal strings, to bypass
+    display filters or limitations.
 
     Adds the `hex` parameter to the constructor. If set, text nodes get hex encoded
     before they are sent to the DBMS, and the response is decoded from hexadecimal.
@@ -734,6 +734,9 @@ class HexDisplayMixin(DisplayMethod):
         """Serializes text cells to hexadecimal. BlobTypes are already converted to
         hexadecimal by the compiler, while BoolType and IntType are (generally) in hex
         form by design.
+
+        This method makes the assumption that Hex(NULL) returns NULL, which is true for
+        most DBMSs.
         """
         if self.hex and isinstance(column.metadata.type, TextType):
             column = Hex(column)
@@ -763,8 +766,6 @@ class HexDisplayMixin(DisplayMethod):
 
     def get_validator(self) -> type[MethodValidator]:
         """Only allow the custom validation if we're not in hex mode."""
-        if self.hex:
-            return None
         return super().get_validator()
 
 
@@ -800,7 +801,7 @@ class RowMethod(RowsMethod):
         """
 
 
-class SelectMethod(DisplayMethod):
+class SelectMethod(HexDisplayMethod):
     """Select SQL injection method.
 
     This method injects a SELECT query with `columns` columns whose column at
@@ -816,6 +817,7 @@ class SelectMethod(DisplayMethod):
             Alternatively, can also be a list of columns.
         column (int): Index of a column that is displayed on the page
         dummy_column (Node): The value to give to unused columns. Defaults to `NULL`.
+        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
     """
 
     column: int
@@ -832,11 +834,13 @@ class SelectMethod(DisplayMethod):
         columns: int | list[Node],
         column: int,
         dummy_column: Node = Value(None),
+        hex: bool = False,
     ):
         super().__init__(
             compiler,
             inject,
             nb_rows=nb_rows,
+            hex=hex
         )
         self.check_parameters(
             locals(),
@@ -898,27 +902,8 @@ class SelectMethod(DisplayMethod):
         return SelectMethodConfigurator
 
 
-class HexSelectMethod(HexDisplayMixin, SelectMethod):
-    """Select SQL injection method.
 
-    This method injects a SELECT query with `columns` columns whose column at
-    index `column` contains results. Suitable for UNION SQL injections or raw
-    SQL queries.
-
-    Args:
-        compiler (Compiler): DBMS compiler
-        inject (InjectForBytes): An coroutine that sends an SQL payload and
-            returns bytes
-        nb_rows (int): Maximum number of rows that can be retrieved at once
-        columns (int, list): Number of columns in the first SELECT statement.
-            Alternatively, can also be a list of columns.
-        column (int): Index of a column that is displayed on the page
-        dummy_column (Node): The value to give to unused columns. Defaults to `NULL`.
-        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
-    """
-
-
-class ChunkMethod(DisplayMethod):
+class ChunkMethod(HexDisplayMethod):
     """Injection method where only part of an SQL cell is displayed, such as
     error-based SQL injections, that will only display N bytes of data (*e.g.*
     MySQL's `ExtractValue()` will only yield 32-chars error messages).
@@ -933,6 +918,7 @@ class ChunkMethod(DisplayMethod):
             Generally, it is the error message displayed by the application.
             If not specified, a pattern will be build automatically, to the
             expense of performance.
+        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
 
     Behaviour:
 
@@ -969,6 +955,7 @@ class ChunkMethod(DisplayMethod):
         *,
         size: Optional[int] = 0x100000,
         pattern: Optional[bytes] = None,
+        hex: bool = False,
     ):
         if pattern is None and self.tag_start is None:
             raise ValueError("If pattern is not set, tag_start must be")
@@ -978,6 +965,7 @@ class ChunkMethod(DisplayMethod):
             compiler,
             inject,
             nb_rows=1,
+            hex=hex
         )
         self.check_parameters(
             locals(),
@@ -1062,40 +1050,6 @@ class ChunkMethod(DisplayMethod):
         from ending.validation import ChunkMethodValidator
 
         return ChunkMethodValidator
-
-
-class HexChunkMethod(HexDisplayMixin, ChunkMethod):
-    """Injection method where only part of an SQL cell is displayed, such as
-    error-based SQL injections, that will only display N bytes of data (*e.g.*
-    MySQL's `ExtractValue()` will only yield 32-chars error messages).
-
-    Args:
-        compiler (Compiler): DBMS compiler
-        inject (InjectForBytes): An coroutine that sends an SQL payload and
-            returns bytes
-        size (int): Maximum size for a chunk; number of displayed bytes.
-            Defaults to `0x100000` (1 MB).
-        pattern (bytes): A pattern to extract data from the HTTP response.
-            Generally, it is the error message displayed by the application.
-            If not specified, a pattern will be build automatically, to the
-            expense of performance.
-        hex (bool): Whether to encode text columns in hex. Defaults to `False`.
-
-    Behaviour:
-
-        1.  Columns are merged into one column, separated by `separator`.
-        2.  `tag_stop` is appended at the end of the structure, indicating the
-            end of the row.
-        3.  The method fetches the first chunk of size `size`.
-            If `tag_stop` is not found, a second chunk if fetched, and so on.
-        4.  Results are split using `tag_separator`, and returned.
-
-    Note:
-        Specifying `pattern` will improve performance since, without a pattern,
-        a tag has to be prepended to each chunk in order to find it in the page:
-        this will reduce the number of data obtained on each request, and
-        therefore reduce the overall speed.
-    """
 
 
 class ErrorBasedMethod(ChunkMethod):

@@ -283,7 +283,7 @@ class MockSelectMethod(sqlite.SelectMethod):
     tag_null = "n"
 
 
-class TestHexDisplayMixinWithHex(test_db_generic_methods.TestHexDisplayMixinWithHex):
+class TestHexDisplayMethodWithHex(test_db_generic_methods.TestHexDisplayMethodWithHex):
     compiler_class = sqlite.Compiler
     method_class = MockSelectMethod
     method_args = {

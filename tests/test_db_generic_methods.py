@@ -17,7 +17,6 @@ from ending.ast import *
 from ending.db import generic
 from ending.db.generic.method import (
     ByteSumTextCellFetcher,
-    MergedColumnsMixin,
     Method,
     RandomTag,
     TextCellFetcher,
@@ -34,6 +33,7 @@ from ending.struct.metadata import (
 from ending.struct.parameterized import ParameterError
 from ending.util import polytomy, quoting
 from ending.util.misc import to_bytes
+from ending.util.typing import Table
 from tests.test_db_generic_compiler import MockCompiler
 
 from .db_testing import *
@@ -280,15 +280,20 @@ class TestRowsMethodWithResultsThriceAAABBB(MethodTestCase, IsolatedAsyncioTestC
     method_args = {"nb_rows": 10}
 
 
-# -- HexDisplayMixin
+# -- HexDisplayMethod
 
 
 class MockDisplayMethod(generic.DisplayMethod):
     def get_validator(self):
-        return "Not none. This is a mock value for TestHexDisplayMixin.test_get_validation_returns_validation_object_if_hex_is_false"
+        return "Not none. This is a mock value for TestHexDisplayMethod.test_get_validation_returns_validation_object_if_hex_is_false"
+    
+    def fetch_merged_rows(self, query: Query, ctx: Context) -> Table:
+        raise AssertionError(
+            "fetch_merged_rows should not be called while testing"
+        )
 
 
-class MockHexDisplayMethod(generic.HexDisplayMixin, MockDisplayMethod, ABC):
+class MockHexDisplayMethod(generic.HexDisplayMethod, MockDisplayMethod, ABC):
     pass
 
 
@@ -351,7 +356,7 @@ class SerializeCellTest:
         )
 
 
-class TestHexDisplayMixinWithHex(MethodTestCase, IsolatedAsyncioTestCase):
+class TestHexDisplayMethodWithHex(MethodTestCase, IsolatedAsyncioTestCase):
     compiler_class = MockCompiler
     compiler_args = {"quote": quoting.hexadecimal}
     method_class = MockHexDisplayMethodWithHex
@@ -474,8 +479,8 @@ class TestHexDisplayMixinWithHex(MethodTestCase, IsolatedAsyncioTestCase):
         self.assertNotIn(method.tag_separator, string.hexdigits)
         self.assertNotIn(method.tag_null, string.hexdigits)
 
-    def test_get_validation_returns_none_if_hex_is_true(self):
-        self.assertIsNone(self.method.get_validator())
+    def test_get_validation_does_not_return_none_if_hex_is_true(self):
+        self.assertIsNotNone(self.method.get_validator())
 
     def test_split_tags_of_one_element_returns_one_tag_only(self):
         assert not self.method._split_tags, "test is not valid if split_tags is true"
@@ -491,7 +496,7 @@ class TestHexDisplayMixinWithHex(MethodTestCase, IsolatedAsyncioTestCase):
         self.assertEqual(split[0].value, "abc")
 
 
-class TestHexDisplayMixinWithoutHex(MethodTestCase, IsolatedAsyncioTestCase):
+class TestHexDisplayMethodWithoutHex(MethodTestCase, IsolatedAsyncioTestCase):
     compiler_class = MockCompiler
     compiler_args = {"quote": quoting.hexadecimal}
     method_class = MockHexDisplayMethodWithoutHex

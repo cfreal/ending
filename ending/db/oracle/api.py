@@ -220,7 +220,7 @@ class AdjustForBlobMixin(generic.Method):
         return await super().adjust_query(query, ctx=ctx)
 
 
-class SelectMethod(AdjustForBlobMixin, generic.HexSelectMethod):
+class SelectMethod(AdjustForBlobMixin, generic.SelectMethod):
     pass
 
 

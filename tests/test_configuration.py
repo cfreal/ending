@@ -1043,8 +1043,7 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
-        self.assertEqual(design.pattern.pattern, b"^results$")
+        self.assertIsInstance(design.method, sqlite.PragmaErrorMethod)
 
     async def test_classic_union_based(self):
         async def send(payload: str) -> bytes:
@@ -1160,7 +1159,7 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
+        self.assertIsInstance(design.method, sqlite.TestMethod)
 
     async def test_completely_negated_query_is_configurable_as_risky(self):
         async def send(payload: str = "2") -> bytes:
@@ -1181,7 +1180,7 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
+        self.assertIsInstance(design.method, sqlite.TestMethod)
 
     async def test_completely_negated_query_with_in_is_configurable_as_risky(self):
         async def send(payload: str = "2") -> bytes:
@@ -1202,9 +1201,9 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
+        self.assertIsInstance(design.method, sqlite.TestMethod)
 
-    async def test_with_huge_number_of_parentheses_is_testbased(self):
+    async def test_with_huge_number_of_parentheses_gives_errorbased(self):
         async def send(payload: str = "test") -> bytes:
             query = f"SELECT * FROM information_schema__columns WHERE ((('test' IN ('a', '{payload}'))))"
             type, data = await self._execute(query)
@@ -1221,7 +1220,7 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
+        self.assertIsInstance(design.method, sqlite.PragmaErrorMethod)
 
     async def test_with_singlequote_escaped_yields_different_quoting_method(self):
         async def send(payload: str = "1") -> bytes:
@@ -1349,7 +1348,7 @@ class TestFullConfiguration(DatabaseTestCase):
                 return b"WAF"
             query = f"SELECT * FROM information_schema__columns WHERE 1={payload}"
             type, data = await self._execute(query)
-            return data
+            return data if type != "error" else b"error"
 
         design = await self.configure_and_get_design(send)
 
@@ -1481,7 +1480,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = "ASC") -> bytes:
             query = f"SELECT * FROM information_schema__columns ORDER BY column_name {payload}"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type == "results" else b""
 
         design = await self.configure_and_get_design(send)
 
@@ -1500,7 +1499,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = "column_name") -> bytes:
             query = f"SELECT * FROM information_schema__columns ORDER BY {payload}"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type == "results" else b""
 
         design = await self.configure_and_get_design(send)
 
@@ -1683,7 +1682,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = "tbl03") -> bytes:
             query = f"SELECT * FROM information_schema__columns WHERE table_name='{payload}'"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type == "results" else b""
 
         with mock.patch.object(
             SelectMethodConfigurator, "_fetch_value", return_value=None
@@ -1971,7 +1970,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = 1) -> bytes:
             query = f"UPDATE information_schema__columns SET table_name=table_name WHERE 1={payload}"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type == "results" else b""
 
         design = await self.configure_and_get_design(send)
 
@@ -1991,7 +1990,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = 1) -> bytes:
             query = f"UPDATE information_schema__columns SET table_name='{payload}' WHERE 1=1"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type == "results" else b""
 
         design = await self.configure_and_get_design(send)
 
@@ -2015,7 +2014,7 @@ class TestFullConfiguration(DatabaseTestCase):
                 f"DELETE FROM information_schema__columns WHERE column_name='{payload}'"
             )
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type != "error" else b"error"
 
         design = await self.configure_and_get_design(send)
 
@@ -2048,8 +2047,7 @@ class TestFullConfiguration(DatabaseTestCase):
 
         self.assertIsInstance(design.compiler, sqlite.Compiler)
         self.assertIs(design.compiler.quote, quoting.singlequote)
-        self.assertIsInstance(design.method, generic.TestMethod)
-        self.assertEqual(design.pattern.pattern, b"^results$")
+        self.assertIsInstance(design.method, sqlite.PragmaErrorMethod)
 
     async def test_inplace_injection_select_field_as_first_field(self):
         # This would not work if a field was before, because without the FROM, we'd have
@@ -2104,7 +2102,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = "some-column") -> bytes:
             query = f"INSERT INTO information_schema__columns VALUES ('some-db', 'some-table', '{payload}', 'some-type')"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type != "error" else b"error"
 
         design = await self.configure_and_get_design(send)
 
@@ -2124,7 +2122,7 @@ class TestFullConfiguration(DatabaseTestCase):
         async def send(payload: str = "1") -> bytes:
             query = f"INSERT INTO information_schema__columns VALUES ('some-db', 'some-table', {payload}, 'some-type')"
             type, data = await self._execute(query)
-            return type.encode() + data
+            return type.encode() + data if type != "error" else b"error"
 
         design = await self.configure_and_get_design(send)
 

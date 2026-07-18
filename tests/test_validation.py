@@ -117,7 +117,9 @@ class MethodValidatorTest(InjectValidationTest):
         )
 
 
-class DisplayMethodValidatorTest(MethodValidatorTest):
+class BaseDisplayMethodValidatorTest(MethodValidatorTest):
+    ALL_ITEMS: list[str]
+
     def between_markers(self, *items: list[str]) -> bytes:
         return (
             DisplayMethodValidator.MARKER_START
@@ -125,13 +127,33 @@ class DisplayMethodValidatorTest(MethodValidatorTest):
             + DisplayMethodValidator.MARKER_END
         ).encode()
 
-    # Result count
+    def all_between_markers(self) -> bytes:
+        return self.between_markers(*self.ALL_ITEMS)
 
     async def test_response_does_not_contain_payload(self):
         async def inject(payload: Node) -> bytes:
             return b"nothing of interest"
 
         await self.expect_error("The results are **not reflected** in the page", inject)
+
+    async def test_marker_start_is_lowercased(self):
+        async def inject(payload: Node) -> bytes:
+            return self.all_between_markers().lower()
+
+        await self.expect_error("The results are displayed as **lowercase**", inject)
+
+    async def test_md_repr_raises_exception_when_type_is_invalid(self):
+        async def inject(payload: Node) -> bytes:
+            return self.all_between_markers()
+
+        validator = self.get_validator(inject)
+
+        with self.assertRaises(TypeError):
+            validator._md_repr(3)
+
+
+class DisplayMethodValidatorTest(BaseDisplayMethodValidatorTest):
+    ALL_ITEMS = ["<", "'", "\n"]
 
     async def test_errors_are_merged(self):
         async def inject(payload: Node) -> bytes:
@@ -156,34 +178,24 @@ class DisplayMethodValidatorTest(MethodValidatorTest):
 
     async def test_response_contains_payload_several_times(self):
         async def inject(payload: Node) -> bytes:
-            return self.between_markers("<", "'", "\n") * 4
+            return self.all_between_markers() * 4
 
         await self.expect_success(
             [
                 "The results are reflected **4 times** in the page",
                 "The results' case is **not** modified",
-                "HTML characters are **not** escaped or removed",
-                "Single quotes are **not** escaped or removed",
-                "Newlines are **not** escaped or removed",
+                "HTML characters are **properly** reflected in the response",
+                "Single quotes are **properly** reflected in the response",
+                "Newlines are **properly** reflected in the response",
             ],
             inject,
         )
 
-    # Markers
-
-    async def test_marker_start_is_lowercased(self):
-        async def inject(payload: Node) -> bytes:
-            return self.between_markers("<", "'", "\n").lower()
-
-        await self.expect_error("The results are displayed as **lowercase**", inject)
-
     async def test_marker_start_is_uppercased(self):
         async def inject(payload: Node) -> bytes:
-            return self.between_markers("<", "'", "\n").upper()
+            return self.all_between_markers().upper()
 
         await self.expect_error("The results are displayed as **uppercase**", inject)
-
-    # Modification
 
     async def test_open_tag_is_html_encoded(self):
         async def inject(payload: Node) -> bytes:
@@ -339,27 +351,71 @@ class DisplayMethodValidatorTest(MethodValidatorTest):
 
     async def test_valid_method_yields_correct_messages(self):
         async def inject(payload: Node) -> bytes:
-            return self.between_markers("<", "'", "\n")
+            return self.all_between_markers()
 
         await self.expect_success(
             [
                 "The results are reflected **once** in the page",
                 "The results' case is **not** modified",
-                "HTML characters are **not** escaped or removed",
-                "Single quotes are **not** escaped or removed",
-                "Newlines are **not** escaped or removed",
+                "HTML characters are **properly** reflected in the response",
+                "Single quotes are **properly** reflected in the response",
+                "Newlines are **properly** reflected in the response",
             ],
             inject,
         )
 
-    async def test_md_repr_raises_exception_when_type_is_invalid(self):
+
+class HexDisplayMethodValidatorTest(BaseDisplayMethodValidatorTest):
+    ALL_ITEMS = ["a"]
+
+    async def test_response_contains_payload_several_times(self):
         async def inject(payload: Node) -> bytes:
-            return self.between_markers("<", "'", "\n")
+            return self.all_between_markers() * 4
 
-        validator = self.get_validator(inject)
+        await self.expect_success(
+            [
+                "The results are reflected **4 times** in the page",
+                "The results' case is **not** modified",
+                "Single characters are **properly** reflected in the response",
+            ],
+            inject,
+        )
 
-        with self.assertRaises(TypeError):
-            validator._md_repr(3)
+    async def test_marker_start_is_uppercased(self):
+        async def inject(payload: Node) -> bytes:
+            return self.all_between_markers().upper()
+
+        await self.expect_error(
+            "The results are displayed as **uppercase**\nThe test character `a` is reflected as `A`",
+            inject,
+        )
+
+    async def test_single_character_is_removed(self):
+        async def inject(payload: Node) -> bytes:
+            return self.between_markers("")
+
+        await self.expect_error("`a` are **removed** from the response", inject)
+
+    async def test_single_character_is_reflected_as_something_random(self):
+        async def inject(payload: Node) -> bytes:
+            return self.between_markers("HELLO")
+
+        await self.expect_error(
+            "The test character `a` is reflected as `HELLO`", inject
+        )
+
+    async def test_valid_method_yields_correct_messages(self):
+        async def inject(payload: Node) -> bytes:
+            return self.all_between_markers()
+
+        await self.expect_success(
+            [
+                "The results are reflected **once** in the page",
+                "The results' case is **not** modified",
+                "Single characters are **properly** reflected in the response",
+            ],
+            inject,
+        )
 
 
 class SelectMethodValidatorTest(DisplayMethodValidatorTest, IsolatedAsyncioTestCase):
@@ -373,10 +429,27 @@ class SelectMethodValidatorTest(DisplayMethodValidatorTest, IsolatedAsyncioTestC
         )
         return m.get_validator()(m, status=self.status)
 
+class SelectMethodWithHexValidatorTest(HexDisplayMethodValidatorTest, IsolatedAsyncioTestCase):
+    def get_validator(self, inject: Callable) -> MethodValidator:
+        m = SelectMethod(
+            self.compiler,
+            inject,
+            columns=5,
+            column=1,
+            nb_rows=1,
+            hex=True
+        )
+        return m.get_validator()(m, status=self.status)
+
 
 class ChunkMethodValidatorTest(DisplayMethodValidatorTest, IsolatedAsyncioTestCase):
     def get_validator(self, inject: Callable) -> MethodValidator:
         m = ChunkMethod(self.compiler, inject)
+        return m.get_validator()(m, status=self.status)
+    
+class ChunkMethodValidatorTest(HexDisplayMethodValidatorTest, IsolatedAsyncioTestCase):
+    def get_validator(self, inject: Callable) -> MethodValidator:
+        m = ChunkMethod(self.compiler, inject, hex=True)
         return m.get_validator()(m, status=self.status)
 
 

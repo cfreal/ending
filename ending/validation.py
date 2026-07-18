@@ -140,11 +140,21 @@ class DisplayMethodValidator(MethodValidator, ABC):
     )
 
     def _get_test_items(self) -> dict[str, Callable]:
+        if self.method.hex:
+            return {
+                "a": self._validate_single_character,
+            }
         return {
             "<": self._validate_less_than,
             "'": self._validate_quote,
             "\n": self._validate_newline,
         }
+        
+    async def _validate_single_character(self, value: bytes) -> None:
+        if value == b"a":
+            self.status.success("Single characters are **properly** reflected in the response")
+        else:
+            self._raise_removed_or_unknown("a", value)
 
     async def _test_payload(self, payload: Node) -> list[bytes]:
         payload = f"{self.MARKER_START}{payload}{self.MARKER_END}"
@@ -173,7 +183,7 @@ class DisplayMethodValidator(MethodValidator, ABC):
 
         # Check case
 
-        r_marker_start, data, _ = results[0]
+        r_marker_start, _, _ = results[0]
         e_marker_start = self.MARKER_START.encode()
 
         if r_marker_start == e_marker_start:
@@ -212,7 +222,7 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_quote(self, value: bytes) -> None:
         match value:
             case b"'":
-                self.status.success("Single quotes are **not** escaped or removed")
+                self.status.success("Single quotes are **properly** reflected in the response")
             case b"\\'":
                 raise ValidationError(
                     "Single quotes are **escaped** using a **backslash** (`\\'`)",
@@ -229,7 +239,7 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_less_than(self, value: bytes) -> None:
         match value.lower():
             case b"<":
-                self.status.success("HTML characters are **not** escaped or removed")
+                self.status.success("HTML characters are **properly** reflected in the response")
             case b"&lt;":
                 raise ValidationError(
                     "The results are **HTML-escaped**",
@@ -242,7 +252,7 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_newline(self, value: bytes) -> None:
         match value:
             case b"\n":
-                self.status.success("Newlines are **not** escaped or removed")
+                self.status.success("Newlines are **properly** reflected in the response")
             case b" ":
                 raise ValidationError(
                     f"Newlines (`'\\n'`) are **converted** to spaces (`' '`)",
@@ -288,7 +298,7 @@ class DisplayMethodValidator(MethodValidator, ABC):
                 items = ", ".join(self._md_repr(item) for item in no_result_items)
                 solutions = [
                     "A denylist might be in place",
-                    "Try setting [b]hex=True[/b], if available",
+                    "Try setting [b]hex=True[/b]",
                 ]
                 if "'" in no_result_items and "'" in self.method.compiler.quote("'"):
                     solutions.append(
