@@ -172,7 +172,7 @@ class HexRandomTag(RandomTag):
     The string is composed of 1 lowercase non-hexadecimal character.
     """
 
-    __NOT_HEX_CHARSET = list(set(string.ascii_lowercase) - set(string.hexdigits + 'x'))
+    __NOT_HEX_CHARSET = list(set(string.ascii_lowercase) - set(string.hexdigits + "x"))
 
     def generate(self, obj: HexDisplayMethod) -> str:
         if obj.hex:
@@ -631,7 +631,7 @@ class DisplayMethod(MergedColumnsMethod):
     The method uses a case-insensitive regex to extract results from the response; it
     does so to avoid complications in case the SQL results are "processed" by the target
     server.
-    
+
     Subclasses must define the `fetch_merged_rows` method, which retrieves the results
     of a query with merged columns.
 
@@ -836,12 +836,7 @@ class SelectMethod(HexDisplayMethod):
         dummy_column: Node = Value(None),
         hex: bool = False,
     ):
-        super().__init__(
-            compiler,
-            inject,
-            nb_rows=nb_rows,
-            hex=hex
-        )
+        super().__init__(compiler, inject, nb_rows=nb_rows, hex=hex)
         self.check_parameters(
             locals(),
             required={
@@ -902,7 +897,6 @@ class SelectMethod(HexDisplayMethod):
         return SelectMethodConfigurator
 
 
-
 class ChunkMethod(HexDisplayMethod):
     """Injection method where only part of an SQL cell is displayed, such as
     error-based SQL injections, that will only display N bytes of data (*e.g.*
@@ -961,12 +955,7 @@ class ChunkMethod(HexDisplayMethod):
             raise ValueError("If pattern is not set, tag_start must be")
 
         self.pattern = pattern
-        super().__init__(
-            compiler,
-            inject,
-            nb_rows=1,
-            hex=hex
-        )
+        super().__init__(compiler, inject, nb_rows=1, hex=hex)
         self.check_parameters(
             locals(),
             required={

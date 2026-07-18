@@ -132,6 +132,7 @@ class HexNullMixin:
     nullable columns must be COALESCE'd with a sentinel tag before HEX is applied, and
     the sentinel must be checked again during deserialization.
     """
+
     tag_hex_null = generic.RandomTag()
 
     def serialize_cell(self, column: Node) -> Node:
@@ -194,43 +195,24 @@ class TestMethod(generic.TestMethod):
 
 
 class PragmaErrorMethod(HexNullMixin, generic.ErrorBasedMethod):
-    """Uses the `pragma_integrity_check()` table to retrieve data.
-    """
+    """Uses the `pragma_integrity_check()` table to retrieve data."""
 
-    def __init__(
-        self,
-        compiler: Compiler,
-        inject: InjectForBytes,
-        **kwargs
-    ):
-        super().__init__(
-            compiler,
-            inject,
-            pattern=rb"no such table: /(.*)",
-            **kwargs
-        )
+    def __init__(self, compiler: Compiler, inject: InjectForBytes, **kwargs):
+        super().__init__(compiler, inject, pattern=rb"no such table: /(.*)", **kwargs)
 
     def build_payload(self, query: Query, position: int) -> Node:
         payload = super().build_payload(query, position)
         payload = Function["pragma_integrity_check"](Concatenation(("/", payload)))
         payload = Query(payload).columns(Value(1))
         return payload
-    
+
+
 class LoadExtensionMethod(HexNullMixin, generic.ErrorBasedMethod):
     """Uses the `load_extension()` SQLite method to retrieve data."""
 
-    def __init__(
-        self,
-        compiler: Compiler,
-        inject: InjectForBytes,
-        **kwargs
-    ):
+    def __init__(self, compiler: Compiler, inject: InjectForBytes, **kwargs):
         super().__init__(
-            compiler,
-            inject,
-            size=250,
-            pattern=rb"stepping, /.{,250}.so:",
-            **kwargs
+            compiler, inject, size=250, pattern=rb"stepping, /.{,250}.so:", **kwargs
         )
 
     def build_payload(self, query: Query, position: int) -> Node:

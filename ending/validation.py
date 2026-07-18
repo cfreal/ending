@@ -149,10 +149,12 @@ class DisplayMethodValidator(MethodValidator, ABC):
             "'": self._validate_quote,
             "\n": self._validate_newline,
         }
-        
+
     async def _validate_single_character(self, value: bytes) -> None:
         if value == b"a":
-            self.status.success("Single characters are **properly** reflected in the response")
+            self.status.success(
+                "Single characters are **properly** reflected in the response"
+            )
         else:
             self._raise_removed_or_unknown("a", value)
 
@@ -222,7 +224,9 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_quote(self, value: bytes) -> None:
         match value:
             case b"'":
-                self.status.success("Single quotes are **properly** reflected in the response")
+                self.status.success(
+                    "Single quotes are **properly** reflected in the response"
+                )
             case b"\\'":
                 raise ValidationError(
                     "Single quotes are **escaped** using a **backslash** (`\\'`)",
@@ -239,7 +243,9 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_less_than(self, value: bytes) -> None:
         match value.lower():
             case b"<":
-                self.status.success("HTML characters are **properly** reflected in the response")
+                self.status.success(
+                    "HTML characters are **properly** reflected in the response"
+                )
             case b"&lt;":
                 raise ValidationError(
                     "The results are **HTML-escaped**",
@@ -252,7 +258,9 @@ class DisplayMethodValidator(MethodValidator, ABC):
     async def _validate_newline(self, value: bytes) -> None:
         match value:
             case b"\n":
-                self.status.success("Newlines are **properly** reflected in the response")
+                self.status.success(
+                    "Newlines are **properly** reflected in the response"
+                )
             case b" ":
                 raise ValidationError(
                     f"Newlines (`'\\n'`) are **converted** to spaces (`' '`)",

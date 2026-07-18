@@ -286,11 +286,9 @@ class TestRowsMethodWithResultsThriceAAABBB(MethodTestCase, IsolatedAsyncioTestC
 class MockDisplayMethod(generic.DisplayMethod):
     def get_validator(self):
         return "Not none. This is a mock value for TestHexDisplayMethod.test_get_validation_returns_validation_object_if_hex_is_false"
-    
+
     def fetch_merged_rows(self, query: Query, ctx: Context) -> Table:
-        raise AssertionError(
-            "fetch_merged_rows should not be called while testing"
-        )
+        raise AssertionError("fetch_merged_rows should not be called while testing")
 
 
 class MockHexDisplayMethod(generic.HexDisplayMethod, MockDisplayMethod, ABC):

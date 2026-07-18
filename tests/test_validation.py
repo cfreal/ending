@@ -429,15 +429,13 @@ class SelectMethodValidatorTest(DisplayMethodValidatorTest, IsolatedAsyncioTestC
         )
         return m.get_validator()(m, status=self.status)
 
-class SelectMethodWithHexValidatorTest(HexDisplayMethodValidatorTest, IsolatedAsyncioTestCase):
+
+class SelectMethodWithHexValidatorTest(
+    HexDisplayMethodValidatorTest, IsolatedAsyncioTestCase
+):
     def get_validator(self, inject: Callable) -> MethodValidator:
         m = SelectMethod(
-            self.compiler,
-            inject,
-            columns=5,
-            column=1,
-            nb_rows=1,
-            hex=True
+            self.compiler, inject, columns=5, column=1, nb_rows=1, hex=True
         )
         return m.get_validator()(m, status=self.status)
 
@@ -446,7 +444,8 @@ class ChunkMethodValidatorTest(DisplayMethodValidatorTest, IsolatedAsyncioTestCa
     def get_validator(self, inject: Callable) -> MethodValidator:
         m = ChunkMethod(self.compiler, inject)
         return m.get_validator()(m, status=self.status)
-    
+
+
 class ChunkMethodValidatorTest(HexDisplayMethodValidatorTest, IsolatedAsyncioTestCase):
     def get_validator(self, inject: Callable) -> MethodValidator:
         m = ChunkMethod(self.compiler, inject, hex=True)
