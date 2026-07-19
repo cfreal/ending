@@ -35,5 +35,8 @@ See `ending.util.quoting`.
 InjectType = TypeVar("InjectType", bytes, bool, None)
 InjectFor = Callable[[Node], Awaitable[InjectType]]
 InjectForBytes = InjectFor[bytes]
+"""A coroutine that takes a Node as input and returns the bytes of the response body."""
 InjectForBool = InjectFor[bool]
+"""A coroutine that takes a Node as input and returns a boolean value."""
 InjectForNone = InjectFor[None]
+"""A coroutine that takes a Node as input and returns nothing."""
