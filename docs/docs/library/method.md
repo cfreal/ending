@@ -46,6 +46,7 @@ Example payload: `SELECT 1,1,CONCAT(...),1,1 FROM ... WHERE ...`
 | columns   | Number of columns in the statement | `int` | YES |
 | column    | Index of a column that is displayed in the response | `int` | YES |
 | nb_rows   | Number of rows to dump at once | `int` | YES |
+| hex       | Whether to dump rows as hexadecimal | `bool` | FALSE |
 
 #### Example `inject()` method
 
@@ -149,6 +150,7 @@ To create a new one, use `ErrorBasedMethod` as the base class.
 |-----------|-------------|------|:--------:|
 | pattern   | A regex to find results in the page | `str` | NO |
 | size      | Maximum size of the error message | `int` | YES |
+| hex       | Whether to dump rows as hexadecimal | `bool` | FALSE |
 
 #### Example `inject()` method
 
