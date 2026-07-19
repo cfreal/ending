@@ -269,6 +269,101 @@ class DisplayMethodValidator(MethodValidator, ABC):
             case _:
                 self._raise_removed_or_unknown("\n", value)
 
+    @staticmethod
+    async def _catch(coro) -> ValidationError | None:
+        """Runs `coro`, and returns the `ValidationError` it raises, if any."""
+        try:
+            await coro
+        except ValidationError as e:
+            return e
+        return None
+
+    async def _diagnose_no_results(self, test_items: dict[str, Callable]) -> None:
+        """Called when injecting every test item at once yields no results.
+        Determines whether the method itself is broken or a denylist is in
+        place, and raises the appropriate `ValidationError`.
+        """
+        # Let's fetch a simple payload with no potential badchars to check which
+        # of the above case we are in
+
+        results = await self._test_payload("")
+        await self._validate_results_are_present_and_properly_cased(results)
+
+        # We have an escaping mechanism in place. Let's try to find out which one.
+
+        item_results = [(item, await self._test_payload(item)) for item in test_items]
+
+        # Items that give no results are probably denylisted
+
+        no_result_items = [item for item, results in item_results if not results]
+
+        if no_result_items:
+            items = ", ".join(self._md_repr(item) for item in no_result_items)
+            solutions = [
+                "A denylist might be in place",
+                "Try setting [b]hex=True[/b]",
+            ]
+            if "'" in no_result_items and "'" in self.method.compiler.quote("'"):
+                solutions.append(
+                    "Change the compiler's quote method to one that does not use single quotes"
+                )
+            raise ValidationError(
+                f"Unable to get output when injecting these characters: {items}",
+                *solutions,
+            )
+
+        # This is really unlikely to happen, but let's check anyway
+
+        for item, results in item_results:
+            if len(results) > 1:
+                raise ValidationError(
+                    f"Injecting {self._md_repr(item)} yields **{len(results)}** results instead of **1**",
+                    SOLUTION_SORRY,
+                    "This is very unlikely to happen",
+                )
+
+        # We could not identify why the first request failed. Max length ?
+
+        items = ", ".join(self._md_repr(item) for item in test_items)
+        raise ValidationError(
+            f"Although injecting {self._md_repr(item)} one-by-one works, injecting them all at once fails",
+            SOLUTION_SORRY,
+            "There might be a maximum length on the output",
+        )
+
+    async def _validate_batch_results(
+        self, test_items: dict[str, Callable], results: list[bytes]
+    ) -> None:
+        """Validates the results obtained when injecting every test item at once."""
+        error = ValidationError()
+
+        if e := await self._catch(
+            self._validate_results_are_present_and_properly_cased(results)
+        ):
+            error += e
+
+        # Check if characters that have high chances of getting modified are
+        # indeed modified
+        data = results[0][1]
+        data = re.split(self.MARKER_SEP.encode(), data, flags=re.IGNORECASE)
+
+        # We should have the same number of result items as the number of test items
+
+        if len(data) != len(test_items):
+            raise ValidationError(
+                f"The data is **not** reflected as expected: `{data!r}` != `{list(test_items)!r}`",
+                SOLUTION_SORRY,
+            )
+
+        # Run the custom validator for each item
+
+        for validator, result in zip(test_items.values(), data):
+            if e := await self._catch(validator(result)):
+                error += e
+
+        if error.problems:
+            raise error
+
     async def validate(self) -> None:
         """Validates that the method properly works when displaying strange characters,
         such as `<`, `'`, and `\\n`.
@@ -282,91 +377,12 @@ class DisplayMethodValidator(MethodValidator, ABC):
         payload = self.MARKER_SEP.join(test_items)
         results = await self._test_payload(payload)
 
-        # First, let's find out if we can see something
-
         # No results: either the method does not work, or we have some kind denylist
         if not results:
-            # Let's fetch a simple payload with no potential badchars to check which
-            # of the above case we are in
+            await self._diagnose_no_results(test_items)
+            return
 
-            results = await self._test_payload("")
-            await self._validate_results_are_present_and_properly_cased(results)
-
-            # We have an escaping mechanism in place. Let's try to find out which one.
-
-            item_results = [
-                (item, await self._test_payload(item)) for item in test_items
-            ]
-
-            # Items that give no results are probably denylisted
-
-            no_result_items = [item for item, results in item_results if not results]
-
-            if no_result_items:
-                items = ", ".join(self._md_repr(item) for item in no_result_items)
-                solutions = [
-                    "A denylist might be in place",
-                    "Try setting [b]hex=True[/b]",
-                ]
-                if "'" in no_result_items and "'" in self.method.compiler.quote("'"):
-                    solutions.append(
-                        "Change the compiler's quote method to one that does not use single quotes"
-                    )
-                raise ValidationError(
-                    f"Unable to get output when injecting these characters: {items}",
-                    *solutions,
-                )
-
-            # This is really unlikely to happen, but let's check anyway
-
-            for item, results in item_results:
-                if len(results) > 1:
-                    raise ValidationError(
-                        f"Injecting {self._md_repr(item)} yields **{len(results)}** results instead of **1**",
-                        SOLUTION_SORRY,
-                        "This is very unlikely to happen",
-                    )
-
-            # We could not identify why the first request failed. Max length ?
-
-            items = ", ".join(self._md_repr(item) for item in test_items)
-            raise ValidationError(
-                f"Although injecting {self._md_repr(item)} one-by-one works, injecting them all at once fails",
-                SOLUTION_SORRY,
-                "There might be a maximum length on the output",
-            )
-
-        error = ValidationError()
-
-        try:
-            await self._validate_results_are_present_and_properly_cased(results)
-        except ValidationError as e:
-            error += e
-
-        data = results[0][1]
-
-        # Check if characters that have high chances of getting modified are
-        # indeed modified
-        data = re.split(self.MARKER_SEP.encode(), data, flags=re.IGNORECASE)
-
-        # We should have the same number of result items as the number of test items
-
-        if len(data) != len(test_items):
-            raise ValidationError(
-                f"The data is **not** reflected as expected: `{data!r}` != `{list(test_items)!r}`",
-                SOLUTION_SORRY,
-            )
-
-        # Run the custom validator for each item
-
-        for (item, validator), result in zip(test_items.items(), data):
-            try:
-                await validator(result)
-            except ValidationError as e:
-                error += e
-
-        if error.problems:
-            raise error
+        await self._validate_batch_results(test_items, results)
 
     @abstractmethod
     async def inject_raw(self, payload: Node) -> bytes:
