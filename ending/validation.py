@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from itertools import chain
 import random
 import re
 from abc import ABC, abstractmethod
@@ -72,17 +73,15 @@ class ValidationError(Exception):
 
     def __add__(self, other: ValidationError) -> ValidationError:
         new = ValidationError()
-        for problem, solutions in self.problems.items():
-            new.add_problem_solutions(problem, *solutions)
-        for problem, solutions in other.problems.items():
+        for problem, solutions in chain(self.problems.items(), other.problems.items()):
             new.add_problem_solutions(problem, *solutions)
         return new
 
 
 class Validator(ABC):
-    """An object that validates (i.e. verifies) that a part of the design is working properly.
-    It is used to validate methods, designs, and queries.
-    It produces messages using a `LiveStatus` object, and raises a `ValidationError` in case of an error.
+    """An object that validates (i.e. verifies) that a part of the design is working
+    properly. It is used to validate methods, designs, and queries. It produces messages
+    using a `LiveStatus` object, and raises a `ValidationError` in case of an error.
     """
 
     name: str
@@ -116,9 +115,9 @@ class MethodValidator(Validator, ABC):
     @abstractmethod
     async def validate(self) -> None:
         """Verifies that the method is working as expected.
-        In case of a problem, a ValidationError is raised.
-        Otherwise, while running, the method yields strings indicating parts of
-        the method that are deemed to behave correctly.
+        In case of a problem, a ValidationError is raised. Otherwise, while running, the
+        method yields strings indicating parts of the method that are deemed to behave
+        correctly.
         """
         # The strategy is to sollicitate small parts of the method and check if
         # they behave properly on the target
@@ -280,8 +279,8 @@ class DisplayMethodValidator(MethodValidator, ABC):
 
     async def _diagnose_no_results(self, test_items: dict[str, Callable]) -> None:
         """Called when injecting every test item at once yields no results.
-        Determines whether the method itself is broken or a denylist is in
-        place, and raises the appropriate `ValidationError`.
+        Determines whether the method itself is broken or a denylist is in place, and
+        raises the appropriate `ValidationError`.
         """
         # Let's fetch a simple payload with no potential badchars to check which
         # of the above case we are in
