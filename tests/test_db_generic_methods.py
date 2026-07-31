@@ -932,6 +932,24 @@ class TestTestMethodNumberStats(IsolatedAsyncioTestCase):
         self.assertEqual(self.method.nb_requests, 0)
         self.assertEqual((smin, smax), (5, 5))
 
+    async def test_fetch_raises_when_lower_bound_offset_exceeds_maximum(self):
+        inject = AsyncMock(return_value=True)
+        method = generic.TestMethod(compiler=self.compiler, inject=inject)
+        ntype = IntType(min=None, max=1)
+        expr = Value(1, type=ntype)
+
+        with self.assertRaisesRegex(InjectionError, "Unable to determine lower bound for integer"):
+            await method.fetcher_int.fetch(expr, ctx=VoidContext())
+
+    async def test_fetch_raises_when_upper_bound_offset_exceeds_maximum(self):
+        inject = AsyncMock(return_value=True)
+        method = generic.TestMethod(compiler=self.compiler, inject=inject)
+        ntype = IntType(min=1, max=None)
+        expr = Value(1, type=ntype)
+
+        with self.assertRaisesRegex(InjectionError, "Unable to determine upper bound for integer"):
+            await method.fetcher_int.fetch(expr, ctx=VoidContext())
+
 
 class TestTestMethod(MethodTestCase, IsolatedAsyncioTestCase):
     compiler_class = MockCompiler

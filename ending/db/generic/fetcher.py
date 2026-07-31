@@ -190,6 +190,11 @@ class IntCellFetcher(TypedCellFetcher[IntType, int]):
             smax = type.max
 
         MULTIPLIER = 10
+        # Don't exceed an offset of ULONG_MAX / 2. This is a hardcoded, sanity-check
+        # limit: 19 injections will happen before this gets hit.
+        # This is due to the fact that some injections may produce an error, and as a
+        # result always return True, which will make the algorithm loop forever.
+        MAXIMUM_OFFSET = 1 << 63
 
         # If one of the bounds is not known, find it ourselves
         if smin is None:
@@ -197,6 +202,10 @@ class IntCellFetcher(TypedCellFetcher[IntType, int]):
             offset = MULTIPLIER
             while await self.inject(expr < start - offset):
                 offset *= MULTIPLIER
+                if offset > MAXIMUM_OFFSET:
+                    raise InjectionError(
+                        "Unable to determine lower bound for integer", payload=expr
+                    )
             smin = start - offset
 
         if smax is None:
@@ -204,6 +213,10 @@ class IntCellFetcher(TypedCellFetcher[IntType, int]):
             offset = MULTIPLIER * 2
             while await self.inject(expr > start + offset):
                 offset *= MULTIPLIER
+                if offset > MAXIMUM_OFFSET:
+                    raise InjectionError(
+                        "Unable to determine upper bound for integer", payload=expr
+                    )
             smax = start + offset
 
         self.method.compiler.wrap(expr)
