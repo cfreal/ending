@@ -107,16 +107,15 @@ from ending.util.typing import *
 
 __all__ = [
     "Method",
-    "DisplayMethod",
     "BoundedMethod",
     "RowsMethod",
-    "MergedColumnsMethod",
     "DisplayMethod",
     "HexDisplayMethod",
+    "MergedColumnsMethod",
     "SelectMethod",
-    "RowMethod",
     "ChunkMethod",
     "ErrorBasedMethod",
+    "RowMethod",
     "CellMethod",
     "TestMethod",
     "TimebasedTestMethod",
@@ -633,8 +632,8 @@ class DisplayMethod(MergedColumnsMethod):
     displayed in the response.
 
     The method uses a case-insensitive regex to extract results from the response; it
-    does so to avoid complications in case the SQL results are "processed" by the target
-    server.
+    does so to avoid complications in case the SQL results are not displayed as-is by
+    the target (e.g., when a target displays results in uppercase).
 
     Subclasses must define the `fetch_merged_rows` method, which retrieves the results
     of a query with merged columns.

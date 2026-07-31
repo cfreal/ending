@@ -201,12 +201,13 @@ class DisplayMethodValidator(MethodValidator, ABC):
             )
 
     def _md_repr(self, value: str | bytes) -> str:
-        if isinstance(value, str):
-            left = 1
-        elif isinstance(value, bytes):
-            left = 2
-        else:
-            raise TypeError()
+        match value:
+            case str():
+                left = 1
+            case bytes():
+                left = 2
+            case _:
+                raise TypeError()
         return f"`{repr(value)[left:-1]}`"
 
     def _raise_removed_or_unknown(self, item: str, value: bytes) -> None:
