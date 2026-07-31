@@ -938,7 +938,9 @@ class TestTestMethodNumberStats(IsolatedAsyncioTestCase):
         ntype = IntType(min=None, max=1)
         expr = Value(1, type=ntype)
 
-        with self.assertRaisesRegex(InjectionError, "Unable to determine lower bound for integer"):
+        with self.assertRaisesRegex(
+            InjectionError, "Unable to determine lower bound for integer"
+        ):
             await method.fetcher_int.fetch(expr, ctx=VoidContext())
 
     async def test_fetch_raises_when_upper_bound_offset_exceeds_maximum(self):
@@ -947,7 +949,9 @@ class TestTestMethodNumberStats(IsolatedAsyncioTestCase):
         ntype = IntType(min=1, max=None)
         expr = Value(1, type=ntype)
 
-        with self.assertRaisesRegex(InjectionError, "Unable to determine upper bound for integer"):
+        with self.assertRaisesRegex(
+            InjectionError, "Unable to determine upper bound for integer"
+        ):
             await method.fetcher_int.fetch(expr, ctx=VoidContext())
 
 
