@@ -120,7 +120,7 @@ class Context:
 
     A `Context` carries the current `State` and a small dictionary of
     information about the current operation. It is immutable and can be extended
-    with additional data using `with_`.
+    with additional data using `Context.with_`.
     """
 
     state: State
