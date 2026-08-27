@@ -9,4 +9,5 @@ TODO.md
 poetry.lock
 .pre-commit-config.yaml
 .codeman
+.claude
 dist
