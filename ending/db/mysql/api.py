@@ -123,7 +123,7 @@ class ExtractValueMethod(generic.ErrorBasedMethod):
             inject,
             size=31,
             pattern=rb"XPATH syntax error: '\((.{,31})'",
-            hex=hex
+            hex=hex,
         )
 
     def build_payload(self, query: Query, position: int) -> Node:
