@@ -367,6 +367,15 @@ class TestHexDisplayMethodWithHex(MethodTestCase, IsolatedAsyncioTestCase):
     def test_does_not_split_tags(self):
         self.assertFalse(self.method._split_tags)
 
+    def test_hex_tag_not_present_in_hex_output(self):
+        # 'x' appears in every 0x-prefixed value — the charset must exclude it
+        for _ in range(100):
+            method = self.get_method()
+            self.assertFalse(
+                method._split_tags,
+                f"tag_stop={method.tag_stop!r} leaked into hex output",
+            )
+
     def test_serialize_cell_propagates_single(self):
         serialized = self.method.serialize_cell(Value("a"))
         self.assertTrue(serialized.metadata.single)

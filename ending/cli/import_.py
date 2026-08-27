@@ -199,7 +199,7 @@ class UrlEncodedBody(RequestBody):
     MEDIA_TYPE = "application/x-www-form-urlencoded"
 
     def kwargs(self) -> dict[str, str]:
-        form = dict(parse_qsl(self.body.decode("latin-1")))
+        form = dict(parse_qsl(self.body.decode("latin-1").removesuffix("\n")))
         return {"data": repr(form)}
 
 
@@ -373,7 +373,7 @@ async def do_import(design_dir: DesignDirectory, namespace: Namespace) -> None:
         f"{PFX_SUCCESS} Design [b]{design_dir.name}[/] created in "
         f"[i]{design_dir.get_module_path()}[/i]"
     )
-    message_success("[b]IMPORTED[/]")
+    message_success("IMPORTED")
 
     from ending.cli.parse import do_edit
 

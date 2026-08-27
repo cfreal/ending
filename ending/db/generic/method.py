@@ -171,7 +171,10 @@ class HexRandomTag(RandomTag):
     The string is composed of 1 lowercase non-hexadecimal character.
     """
 
-    __NOT_HEX_CHARSET = list(set(string.ascii_lowercase) - set(string.hexdigits + "x"))
+    # Exclude hex digits AND 'x', which appears literally in every 0x-prefixed value
+    __NOT_HEX_CHARSET: str = "".join(
+        set(string.ascii_lowercase) - set(string.hexdigits + "x")
+    )
 
     def generate(self, obj: HexDisplayMethod) -> str:
         if obj.hex:

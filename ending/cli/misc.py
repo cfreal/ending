@@ -177,7 +177,7 @@ def display_validation_error(error: ValidationError) -> None:
         except:
             console.print_exception(max_frames=5, suppress=[sys.modules[__name__]])
 
-    message_error("[b]FAILURE")
+    message_error("FAILURE")
 
 
 SPINNERS["ending-cli"] = {

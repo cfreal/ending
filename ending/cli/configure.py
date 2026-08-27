@@ -79,14 +79,14 @@ async def _configure_manual(
         else:
             method = None
     except ValueError:
-        message_error("[b]ERROR[/]")
+        message_error("ERROR")
         return
 
     await configurator.setup_manual(dbms, method)
 
     status.success("Created skeleton code")
     status.done()
-    message_success("[b]SUCCESS[/]")
+    message_success("SUCCESS")
 
 
 async def do_configure(design_dir: DesignDirectory, ns: Namespace) -> None:
@@ -120,6 +120,6 @@ async def do_configure(design_dir: DesignDirectory, ns: Namespace) -> None:
     except (asyncio.CancelledError, KeyboardInterrupt):
         message_error("INTERRUPTED")
     else:
-        message_success("[b]CONFIGURED[/]")
+        message_success("CONFIGURED")
     finally:
         status.done()

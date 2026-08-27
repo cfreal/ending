@@ -514,6 +514,11 @@ class TestUrlEncodedBody(unittest.TestCase):
         self.assertEqual(data["q"], "hello world")
         self.assertEqual(data["x"], "a=b")
 
+    def test_trailing_newline_stripped(self):
+        # User may press Enter before Ctrl-D; the trailing \n must not corrupt parsing
+        kwargs = self._body(b"a=1&b=two\n").kwargs()
+        self.assertEqual(eval(kwargs["data"]), {"a": "1", "b": "two"})
+
 
 # ---------------------------------------------------------------------------
 # MultipartBody._is_interleaved()
