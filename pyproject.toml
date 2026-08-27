@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cfreal-ending"
-version = "0.2.2"
+version = "0.3.0"
 description = "SQL injection framework"
 authors = ["Charles \"cfreal\" Fol <folcharles@gmail.com>"]
 readme = "README.md"
