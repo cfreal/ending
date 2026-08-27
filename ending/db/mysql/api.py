@@ -116,12 +116,14 @@ class ExtractValueMethod(generic.ErrorBasedMethod):
         self,
         compiler: Compiler,
         inject: InjectForBytes,
+        hex: bool = False,
     ):
         super().__init__(
             compiler,
             inject,
             size=31,
             pattern=rb"XPATH syntax error: '\((.{,31})'",
+            hex=hex
         )
 
     def build_payload(self, query: Query, position: int) -> Node:
