@@ -1,29 +1,27 @@
 from __future__ import annotations
 
 import inspect
-import os.path
 import re
 import shutil
 import sys
-from abc import ABC, abstractmethod
+from abc import ABC
 from ast import *
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generic, Type, TypeVar
-
-import aiohttp
+from typing import Type
 
 from ending.ast import Node
 from ending.db.generic.compiler import Compiler
 from ending.db.generic.map import Mapper
 from ending.db.generic.method import Method
 from ending.util.misc import ENDING_PATH
-from ending.util.requests import AsyncSession
 
 __all__ = [
     "Design",
     "HTTPDesign",
     "AIOHTTPDesign",
+    "HTTPXHTTPDesign",
+    "BaseHTTPDesign",
     "DesignDirectory",
     "DesignEditor",
     "DesignLoadException",
@@ -124,95 +122,6 @@ class Design(ABC):
             and cls.set_method is not Design.set_method
             and cls.set_mapper is not Design.set_mapper
         )
-
-
-class DesignLoadException(Exception):
-    """The design cannot be loaded due to an exception."""
-
-
-T = TypeVar("T")
-
-
-class BaseHTTPDesign(Design, Generic[T]):
-    """Base class for HTTP designs.
-
-    This design does not create an `AsyncSession` instance, but it provides the
-    `send` method to send payloads.
-    """
-
-    PROXY: str = None
-    """Optional proxy to use, such as `http://localhost:8080`. Defaults to none."""
-    WORKERS: int = 2
-    """Number of workers (concurrent connections) to use. Defaults to 2."""
-
-    session: T
-    """Asynchronous HTTP session."""
-
-    @abstractmethod
-    async def create_session(self) -> T:
-        """Creates an HTTP session."""
-        ...
-
-    @abstractmethod
-    async def close_session(self) -> None:
-        """Closes the HTTP session."""
-        ...
-
-    async def setup(self) -> None:
-        """Sets up the design."""
-        await super().setup()
-        self.session = await self.create_session()
-
-    async def teardown(self) -> None:
-        """Tears down the design."""
-        await super().teardown()
-        await self.close_session()
-
-
-class HTTPDesign(BaseHTTPDesign[AsyncSession]):
-    """A design for web injections.
-
-    This design creates an `AsyncSession` instance to perform HTTP requests.
-    """
-
-    PROXY: str = None
-    """Optional proxy to use, such as `http://localhost:8080`. Defaults to none."""
-    WORKERS: int = 2
-    """Number of workers (concurrent connections) to use. Defaults to 2."""
-
-    session: AsyncSession
-    """Asynchronous HTTP session. The session has the same API as `requests.Session`.
-    """
-
-    async def create_session(self) -> AsyncSession:
-        """Creates an HTTP session."""
-        workers = int(self.options.get("workers", self.WORKERS))
-        session = AsyncSession(workers=workers)
-        session.verify = False
-        proxy = self.options.get("proxy", self.PROXY)
-        if proxy:
-            session.proxies = {"all": proxy}
-        return session
-
-    async def close_session(self) -> None:
-        """Closes the HTTP session."""
-        self.session.close()
-
-
-class AIOHTTPDesign(BaseHTTPDesign[aiohttp.ClientSession]):
-    """A design for web injections using aiohttp."""
-
-    session: aiohttp.ClientSession
-    """Asynchronous HTTP session using aiohttp."""
-
-    async def create_session(self) -> aiohttp.ClientSession:
-        workers = int(self.options.get("workers", self.WORKERS))
-        connector = aiohttp.TCPConnector(limit=workers, ssl=False)
-        session = aiohttp.ClientSession(connector=connector)
-        return session
-
-    async def close_session(self) -> None:
-        await self.session.close()
 
 
 class DesignDirectory:
@@ -552,3 +461,11 @@ class DesignEditor:
             line = f"from {module} import {', '.join(names)}"
 
         self._replace_code_at(replacement, line)
+
+
+from ending.cli.design.http import (
+    AIOHTTPDesign,
+    BaseHTTPDesign,
+    HTTPDesign,
+    HTTPXHTTPDesign,
+)
