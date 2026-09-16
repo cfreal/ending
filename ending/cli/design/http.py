@@ -101,9 +101,17 @@ class _LatencyTimerMixin:
 
 
 class _TimedHTTPConnection(_LatencyTimerMixin, HTTPConnection): ...
+
+
 class _TimedHTTPSConnection(_LatencyTimerMixin, HTTPSConnection): ...
-class _TimedHTTPConnectionPool(HTTPConnectionPool): ConnectionCls = _TimedHTTPConnection
-class _TimedHTTPSConnectionPool(HTTPSConnectionPool): ConnectionCls = _TimedHTTPSConnection
+
+
+class _TimedHTTPConnectionPool(HTTPConnectionPool):
+    ConnectionCls = _TimedHTTPConnection
+
+
+class _TimedHTTPSConnectionPool(HTTPSConnectionPool):
+    ConnectionCls = _TimedHTTPSConnection
 
 
 class LatencyAdapter(HTTPAdapter):
@@ -258,7 +266,10 @@ class HTTPXHTTPDesign(BaseHTTPDesign[httpx.AsyncClient]):
             verify=False,
             proxy=proxy,
             limits=httpx.Limits(max_connections=workers),
-            event_hooks={"request": [self._on_request], "response": [self._on_response]},
+            event_hooks={
+                "request": [self._on_request],
+                "response": [self._on_response],
+            },
         )
         return session
 
