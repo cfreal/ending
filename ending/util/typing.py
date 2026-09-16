@@ -17,6 +17,7 @@ __all__ = [
     "InjectForBytes",
     "InjectForBool",
     "InjectForNone",
+    "InjectForFloat",
 ]
 
 Cell = str | bytes | int | bool | None
@@ -32,7 +33,7 @@ QuoteCallable = Callable[[str], str]
 See `ending.util.quoting`.
 """
 
-InjectType = TypeVar("InjectType", bytes, bool, None)
+InjectType = TypeVar("InjectType", bytes, bool, None, float)
 InjectFor = Callable[[Node], Awaitable[InjectType]]
 InjectForBytes = InjectFor[bytes]
 """A coroutine that takes a Node as input and returns the bytes of the response body."""
@@ -40,3 +41,6 @@ InjectForBool = InjectFor[bool]
 """A coroutine that takes a Node as input and returns a boolean value."""
 InjectForNone = InjectFor[None]
 """A coroutine that takes a Node as input and returns nothing."""
+InjectForFloat = InjectFor[float]
+"""A coroutine that takes a Node as input and returns the request's elapsed time, in
+seconds."""

