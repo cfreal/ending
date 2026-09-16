@@ -154,6 +154,10 @@ $ ending dvwa-blind validate
 
 The configuration is **done**! But since the injection is blind, let us see a few different optimisation tricks to get the data faster.
 
+!!! note
+
+    Blind injections send many requests, so the HTTP backend matters for speed. See [Choosing an HTTP backend](../cli/design.md#choosing-an-http-backend) for the available designs and their performance trade-offs.
+
 ### Map filters
 
 Dumping the tables and columns of a whole database using a blind SQL injection can be very slow. Generally, as an attacker, we're mostly interested in the table that contains the credentials. With **ending**, you can filter the name of the database, table and column you want to dump using wildcards! To dump every column whose name contains `pass`, we can use:

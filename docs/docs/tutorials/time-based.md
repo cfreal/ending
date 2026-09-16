@@ -100,7 +100,7 @@ We therefore have the following `inject()` method:
 
 !!! note
 
-    For every `HTTPDesign`, HTTP responses returned by `self.session` carry a `latency` attribute: a `float` holding the time, in seconds, the request took between leaving and the response arriving. This is exactly what a time-based `inject()` needs to return.
+    For every `HTTPDesign`, HTTP responses returned by `self.session` carry a `latency` attribute: a `float` holding the time, in seconds, the request took between leaving and the response arriving. This is exactly what a time-based `inject()` needs to return. See [Choosing an HTTP backend](../cli/design.md#choosing-an-http-backend) for the available designs.
 
 Now, let's indicate the delay we used in `set_method()`.
 
