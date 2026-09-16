@@ -1377,16 +1377,15 @@ class TimebasedTestMethod(TestMethod):
 
     async def inject(self, payload: Node) -> bool:
         """Injects a payload and returns `True` if there was a delay."""
-        async with self._semaphores["inject"]:
-            start = time.monotonic()
-            await super().inject(payload)
-            stop = time.monotonic()
-            elapsed = stop - start
-            slept = elapsed >= self.delay
+        start = time.monotonic()
+        await super().inject(payload)
+        stop = time.monotonic()
+        elapsed = stop - start
+        slept = elapsed >= self.delay
 
-            array = self._delays[slept]
-            array.append(elapsed)
-            return slept
+        array = self._delays[slept]
+        array.append(elapsed)
+        return slept
 
     def compute_nb_sections(self, cell: Query) -> int:
         """Computes the number of sections to use for polytomy for the given cell."""
