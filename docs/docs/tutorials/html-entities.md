@@ -49,7 +49,7 @@ The injection can then be configured normally:
 $ ending tutorial-html-entities create
 ```
 
-Setup the design:
+Setup the design's `send()` method:
 
 ```python
 class Design(HTTPDesign):
@@ -114,17 +114,18 @@ class NoHTMLEntitiesCompiler(Compiler):
         SQLITE_INT_MIN = -(2**63)
         SQLITE_INT_MAX = 2**63 - 1
 
-        if comparison.operator == "<":
-            return f"({comparison.left:p} BETWEEN {SQLITE_INT_MIN} AND {comparison.right:p}-1)"
-        elif comparison.operator == "<=":
-            return f"({comparison.left:p} BETWEEN {SQLITE_INT_MIN} AND {comparison.right:p})"
-        elif comparison.operator == ">":
-            return f"({comparison.left:p} BETWEEN {comparison.right:p}+1 AND {SQLITE_INT_MAX})"
-        elif comparison.operator == ">=":
-            return f"({comparison.left:p} BETWEEN {comparison.right:p} AND {SQLITE_INT_MAX})"
-        
-        # Otherwise, use the default
-        return super().compile_Comparison(comparison, format)
+        match comparison.operator:
+            case "<":
+                return f"({comparison.left:p} BETWEEN {SQLITE_INT_MIN} AND {comparison.right:p}-1)"
+            case "<=":
+                return f"({comparison.left:p} BETWEEN {SQLITE_INT_MIN} AND {comparison.right:p})"
+            case ">":
+                return f"({comparison.left:p} BETWEEN {comparison.right:p}+1 AND {SQLITE_INT_MAX})"
+            case ">=":
+                return f"({comparison.left:p} BETWEEN {comparison.right:p} AND {SQLITE_INT_MAX})"
+            case _:
+                # Otherwise, use the default
+                return super().compile_Comparison(comparison, format)
 ```
 
 !!! note
