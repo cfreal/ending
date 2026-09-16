@@ -5,6 +5,7 @@ import random
 import re
 import statistics
 import string
+import time
 import unittest
 from abc import ABC
 from asyncio import CancelledError
@@ -1258,7 +1259,9 @@ class TestTimebasedTestMethod(TestTestMethodWithResilience):
 
     async def inject(self, payload: Node):
         payload = payload & Function["SLEEP"](0.2)
-        return await super().inject(payload)
+        start = time.monotonic()
+        await super().inject(payload)
+        return time.monotonic() - start
 
     async def test_compute_nb_sections(self):
         query = Query().columns(Expr("A", type=TextType(charset="A")))
