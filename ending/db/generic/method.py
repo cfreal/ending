@@ -1375,14 +1375,6 @@ class TimebasedTestMethod(TestMethod):
         self.delay = float(delay)
         self._delays = ([], [])
 
-    async def setup_semaphores(self) -> None:
-        """No tests can run concurrently."""
-        await super().setup_semaphores()
-        self._semaphores["rows"] = Semaphore(1)
-        self._semaphores["cells"] = Semaphore(1)
-        self._semaphores["parts"] = Semaphore(1)
-        self._semaphores["inject"] = Semaphore(1)
-
     async def inject(self, payload: Node) -> bool:
         """Injects a payload and returns `True` if there was a delay."""
         async with self._semaphores["inject"]:
