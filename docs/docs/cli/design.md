@@ -82,6 +82,24 @@ That's it!
 
     The `Session` has exactly the same API than [the one from the `requests` library](https://pypi.org/project/requests/). The only difference is that its `get()` and `post()` methods are asynchronous, and require the use of the `await` keyword.
 
+### Choosing an HTTP backend
+
+**ending** ships three HTTP designs, each wrapping a different HTTP client. They share the same interface — `PROXY`/`WORKERS` settings, and a `latency` attribute on every response (the time, in seconds, the request took between leaving and the response arriving) — so you can swap between them without touching the rest of your design.
+
+- [HTTPDesign](../pdoc/ending/cli/design.html#ending.cli.design.HTTPDesign): the default. Its `session` is backed by the [`requests`](https://pypi.org/project/requests/) library, with the asynchronous `get()`/`post()` described above.
+- [AIOHTTPDesign](../pdoc/ending/cli/design.html#ending.cli.design.AIOHTTPDesign): its `session` is an [`aiohttp.ClientSession`](https://docs.aiohttp.org/en/stable/client_reference.html#client-session).
+- [HTTPXHTTPDesign](../pdoc/ending/cli/design.html#ending.cli.design.HTTPXHTTPDesign): its `session` is an [`httpx.AsyncClient`](https://www.python-httpx.org/async/).
+
+`HTTPDesign` is the default mostly because people are used to `requests`; the two others will generally provide greater performance.
+
+To pick one, just change the base class of your `Design`:
+
+```python
+class Design(AIOHTTPDesign):
+    async def send(self, payload: str) -> bytes:
+        ...
+```
+
 ## Automatic configuration (`configure`)
 
 If the injection is simple enough, **ending** can configure it itself. Go back to the CLI and run:
