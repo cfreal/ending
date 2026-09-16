@@ -207,7 +207,7 @@ class AIOHTTPDesign(BaseHTTPDesign[aiohttp.ClientSession]):
 
     async def create_session(self) -> aiohttp.ClientSession:
         workers = int(self.options.get("workers", self.WORKERS))
-        connector = aiohttp.TCPConnector(limit=workers)
+        connector = aiohttp.TCPConnector(limit=workers, ssl=False)
         session = aiohttp.ClientSession(connector=connector)
         return session
 
